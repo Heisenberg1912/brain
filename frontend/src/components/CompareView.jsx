@@ -92,7 +92,7 @@ export default function CompareView({ compareIds, locations, isActive }) {
       .catch((error) => {
         console.error(error)
         if (!cancelled) {
-          setInsightError('Gemini compare verdict is unavailable right now.')
+          setInsightError('AI compare verdict is unavailable right now.')
         }
       })
       .finally(() => {
@@ -197,7 +197,7 @@ export default function CompareView({ compareIds, locations, isActive }) {
   return (
     <div className="compare-scroll">
       <div className="detail-section">
-        <h3>Gemini Verdict</h3>
+        <h3>AI Verdict</h3>
         {insightLoading && <div className="compare-ai-state"><span className="spinner" /> Building comparison brief...</div>}
         {!insightLoading && insightError && <div className="compare-ai-state compare-ai-error">{insightError}</div>}
         {!insightLoading && insight && (

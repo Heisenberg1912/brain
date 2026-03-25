@@ -37,7 +37,7 @@ export default function AIChat({ activeId, compareIds, locations, isActive }) {
       .catch((error) => {
         console.error(error)
         if (!cancelled) {
-          setBriefError('Gemini market pulse is unavailable right now.')
+          setBriefError('AI market pulse is unavailable right now.')
         }
       })
 
@@ -105,7 +105,7 @@ export default function AIChat({ activeId, compareIds, locations, isActive }) {
   return (
     <div className="ai-container">
       <div className="ai-context-bar">
-        <span className="ai-context-label">Gemini Context</span>
+        <span className="ai-context-label">Brain Context</span>
         <span className="ai-context-value">{contextLabel}</span>
       </div>
 
@@ -113,7 +113,7 @@ export default function AIChat({ activeId, compareIds, locations, isActive }) {
         <div className="ai-brief">
           <div className="ai-brief-head">
             <div>
-              <div className="ai-brief-title">Gemini Market Pulse</div>
+              <div className="ai-brief-title">Market Pulse</div>
               <div className="ai-brief-thesis">{brief.national_thesis}</div>
             </div>
           </div>
@@ -186,7 +186,7 @@ export default function AIChat({ activeId, compareIds, locations, isActive }) {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
-          placeholder="Ask Gemini about this market..."
+          placeholder="Ask BuiltAttic Brain about this market..."
         />
         <button className="ai-send" onClick={() => send()} disabled={loading || !input.trim()}>
           Ask

@@ -70,6 +70,77 @@ MODULE_REGISTRY = (
     },
 )
 
+ARCHITECTURE_LAYERS = (
+    {
+        "key": "api_gateway",
+        "title": "API Gateway",
+        "role": "Receives intelligence requests through FastAPI routes and frontend entry points, then routes them into the AI stack.",
+        "components": [
+            "api.routers.ai",
+            "frontend/src/components/AIChat.jsx",
+            "frontend/src/components/CompareView.jsx",
+        ],
+        "depends_on": ["llm_adapter", "tools"],
+    },
+    {
+        "key": "llm_adapter",
+        "title": "LLM Adapter Layer",
+        "role": "Provides a provider-agnostic boundary for OpenAI, Claude, Gemini, and future OpenAI-compatible open-source backends.",
+        "components": [
+            "brain.ai.llm",
+            "brain.ai.adapters.openai",
+            "brain.ai.adapters.claude",
+            "brain.ai.adapters.gemini",
+        ],
+        "depends_on": [],
+    },
+    {
+        "key": "tools",
+        "title": "Tools Layer",
+        "role": "Builds structured context, composes modules, and decides when to call the LLM versus returning deterministic system outputs.",
+        "components": [
+            "brain.ai.service",
+            "brain.ai.brain_layer",
+            "brain.ai.tools",
+        ],
+        "depends_on": ["context", "valuation", "assets"],
+    },
+    {
+        "key": "context",
+        "title": "Context Layer",
+        "role": "Supplies planning, zoning, standards, and site context from the data bank.",
+        "components": [
+            "brain.data_bank.service",
+            "planning_contexts",
+            "masterplans",
+            "regional_standards",
+        ],
+        "depends_on": [],
+    },
+    {
+        "key": "valuation",
+        "title": "Valuation Layer",
+        "role": "Owns scoring, weighted logic, price regression, hotspot detection, and forward outlook generation.",
+        "components": [
+            "brain.valuation.service",
+            "brain.valuation.ml.price_predictor",
+            "brain.valuation.ml.hotspot_detector",
+        ],
+        "depends_on": ["context"],
+    },
+    {
+        "key": "assets",
+        "title": "Asset Rails Layer",
+        "role": "Adds ownership, licensing, and tokenization readiness from the blockchain/property layer.",
+        "components": [
+            "brain.blockchain.service",
+            "architectural_plans",
+            "tokenized_properties",
+        ],
+        "depends_on": ["context"],
+    },
+)
+
 INTERFACE_REGISTRY = (
     {
         "key": "llm_profile",
@@ -77,6 +148,13 @@ INTERFACE_REGISTRY = (
         "method": "GET",
         "scope": "system",
         "description": "Active LLM abstraction profile, provider capabilities, and current model selection.",
+    },
+    {
+        "key": "brain_architecture",
+        "path": "/api/v1/ai/brain/architecture",
+        "method": "GET",
+        "scope": "system",
+        "description": "Layered blueprint for how the intelligence interface is composed across subsystems.",
     },
     {
         "key": "brain_approach",
@@ -170,10 +248,40 @@ def list_module_profiles() -> list[dict[str, Any]]:
     return [dict(module) for module in MODULE_REGISTRY]
 
 
+def get_brain_architecture() -> dict[str, Any]:
+    return {
+        "objective": "Keep the AI brain modular, layered, and replaceable as the system grows.",
+        "style": "layered_modular_orchestrator",
+        "primary_path": ["API gateway", "LLM adapter layer", "tools"],
+        "layers": [dict(layer) for layer in ARCHITECTURE_LAYERS],
+        "request_flow": [
+            "Requests enter through the API gateway.",
+            "The API gateway routes AI work through the LLM adapter layer and the structured tools layer.",
+            "The tools layer fetches context from data bank, valuation, and asset rails before any free-form generation is attempted.",
+            "The LLM adapter layer optionally turns structured tool context into natural-language answers or JSON payloads.",
+            "Responses return with explainable modules, recommendations, and source-system boundaries preserved.",
+        ],
+        "boundaries": [
+            "Structured system outputs remain the source of truth.",
+            "LLM providers are swappable behind the adapter registry.",
+            "Valuation and asset logic stay outside prompt logic.",
+            "Frontend surfaces consume AI responses without provider-specific coupling.",
+        ],
+        "extension_points": [
+            "Add new AI modules without changing the provider layer.",
+            "Add new providers through the LLM registry without changing orchestration code.",
+            "Point the OpenAI-compatible slot at open-source backends later through base_url routing.",
+            "Expand subsystem coverage by attaching new domain services into the orchestration layer.",
+        ],
+        "interfaces": [dict(item) for item in INTERFACE_REGISTRY],
+    }
+
+
 def get_brain_approach() -> dict[str, Any]:
     return {
         "objective": "Intelligence interface across the system.",
-        "approach": "Use a modular orchestrator that pulls structured signals from the data bank, valuation engine, and blockchain rails before composing recommendations.",
+        "approach": "Run the intelligence interface through an API gateway, a provider-agnostic LLM adapter layer, and structured tools that pull from the data bank, valuation engine, and blockchain rails.",
+        "interface_chain": ["API gateway", "LLM adapter layer", "tools"],
         "systems": ["data_bank", "valuation", "blockchain"],
         "principles": [
             "structured_context_before_generation",
@@ -184,9 +292,9 @@ def get_brain_approach() -> dict[str, Any]:
             "explainability_over_black_box_output",
         ],
         "orchestration_flow": [
-            "Pull planning, zoning, and site context from the data bank.",
-            "Assemble valuation, weighted logic, price regression, and hotspot signals.",
-            "Read plan and property asset readiness from the blockchain layer.",
+            "Receive requests through the API gateway.",
+            "Route provider-specific generation through the LLM adapter layer.",
+            "Use tools to pull planning, valuation, and asset context from the core systems.",
             "Compose a decision-ready thesis, modules, and recommended next actions.",
         ],
         "interfaces": [dict(item) for item in INTERFACE_REGISTRY],

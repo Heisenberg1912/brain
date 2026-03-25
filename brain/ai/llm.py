@@ -19,24 +19,46 @@ def _gemini_factory(*, model: str | None = None) -> LLMAdapter:
     return GeminiAdapter(model=model or settings.gemini_model)
 
 
+def _claude_factory(*, model: str | None = None) -> LLMAdapter:
+    from brain.ai.adapters.claude import ClaudeAdapter
+
+    return ClaudeAdapter(model=model or settings.claude_model)
+
+
 PROVIDER_REGISTRY: dict[str, dict[str, Any]] = {
     "openai": {
         "key": "openai",
         "label": "OpenAI",
-        "positioning": "Strong general-purpose reasoning and structured generation.",
+        "positioning": "Default provider for the current AI interface, with strong general-purpose reasoning and structured generation.",
         "supports_text": True,
         "supports_json": True,
         "supports_system_instruction": True,
+        "integration_style": "openai_compatible",
+        "open_source_ready": True,
         "model_resolver": lambda: settings.openai_model,
         "factory": _openai_factory,
+    },
+    "claude": {
+        "key": "claude",
+        "label": "Claude",
+        "positioning": "Alternative Anthropic provider available through the pluggable LLM registry.",
+        "supports_text": True,
+        "supports_json": True,
+        "supports_system_instruction": True,
+        "integration_style": "native",
+        "open_source_ready": False,
+        "model_resolver": lambda: settings.claude_model,
+        "factory": _claude_factory,
     },
     "gemini": {
         "key": "gemini",
         "label": "Gemini",
-        "positioning": "Default low-friction provider for the current AI interface.",
+        "positioning": "Alternative provider available through the pluggable LLM registry.",
         "supports_text": True,
         "supports_json": True,
         "supports_system_instruction": True,
+        "integration_style": "native",
+        "open_source_ready": False,
         "model_resolver": lambda: settings.gemini_model,
         "factory": _gemini_factory,
     },
@@ -53,6 +75,8 @@ def register_provider(
     supports_text: bool = True,
     supports_json: bool = False,
     supports_system_instruction: bool = False,
+    integration_style: str = "native",
+    open_source_ready: bool = False,
 ) -> dict[str, Any]:
     normalized = key.strip().lower()
     if not normalized:
@@ -65,6 +89,8 @@ def register_provider(
         "supports_text": supports_text,
         "supports_json": supports_json,
         "supports_system_instruction": supports_system_instruction,
+        "integration_style": integration_style,
+        "open_source_ready": open_source_ready,
         "model_resolver": model_resolver,
         "factory": factory,
     }
@@ -90,6 +116,8 @@ def _build_provider_profile(key: str, *, is_active: bool) -> dict[str, Any]:
         "supports_text": bool(entry.get("supports_text", True)),
         "supports_json": bool(entry.get("supports_json", False)),
         "supports_system_instruction": bool(entry.get("supports_system_instruction", False)),
+        "integration_style": entry.get("integration_style", "native"),
+        "open_source_ready": bool(entry.get("open_source_ready", False)),
         "positioning": entry.get("positioning", ""),
     }
 

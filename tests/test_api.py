@@ -464,28 +464,44 @@ class TestAIValidation:
     def test_llm_profile_route_returns_active_provider(self):
         payload = {
             "abstraction": "provider_registry",
-            "active_provider": "gemini",
-            "active_model": "gemini-2.5-pro",
+            "active_provider": "openai",
+            "active_model": "gpt-4o",
             "providers": [
                 {
                     "key": "openai",
                     "label": "OpenAI",
                     "model": "gpt-4o",
+                    "is_active": True,
+                    "supports_text": True,
+                    "supports_json": True,
+                    "supports_system_instruction": True,
+                    "integration_style": "openai_compatible",
+                    "open_source_ready": True,
+                    "positioning": "Default provider for the current AI interface, with strong general-purpose reasoning and structured generation.",
+                },
+                {
+                    "key": "claude",
+                    "label": "Claude",
+                    "model": "claude-sonnet-4-5",
                     "is_active": False,
                     "supports_text": True,
                     "supports_json": True,
                     "supports_system_instruction": True,
-                    "positioning": "Strong general-purpose reasoning and structured generation.",
+                    "integration_style": "native",
+                    "open_source_ready": False,
+                    "positioning": "Alternative Anthropic provider available through the pluggable LLM registry.",
                 },
                 {
                     "key": "gemini",
                     "label": "Gemini",
                     "model": "gemini-2.5-pro",
-                    "is_active": True,
+                    "is_active": False,
                     "supports_text": True,
                     "supports_json": True,
                     "supports_system_instruction": True,
-                    "positioning": "Default low-friction provider for the current AI interface.",
+                    "integration_style": "native",
+                    "open_source_ready": False,
+                    "positioning": "Alternative provider available through the pluggable LLM registry.",
                 },
             ],
         }
@@ -495,8 +511,10 @@ class TestAIValidation:
 
         assert r.status_code == 200
         body = r.json()
-        assert body["active_provider"] == "gemini"
-        assert body["providers"][1]["is_active"] is True
+        assert body["active_provider"] == "openai"
+        assert body["providers"][0]["is_active"] is True
+        assert body["providers"][0]["open_source_ready"] is True
+        assert any(item["key"] == "claude" for item in body["providers"])
 
     def test_query_rejects_missing_field(self):
         r = client.post("/api/v1/ai/query", json={})
@@ -556,18 +574,73 @@ class TestAIValidation:
         assert body[0]["source_system"] == "valuation"
         assert body[1]["depends_on"] == ["valuation"]
 
+    def test_brain_architecture_route_returns_overview(self):
+        payload = {
+            "objective": "Keep the AI brain modular, layered, and replaceable as the system grows.",
+            "style": "layered_modular_orchestrator",
+            "primary_path": ["API gateway", "LLM adapter layer", "tools"],
+            "layers": [
+                {
+                    "key": "api_gateway",
+                    "title": "API Gateway",
+                    "role": "Receives intelligence requests through FastAPI routes and frontend entry points, then routes them into the AI stack.",
+                    "components": ["api.routers.ai"],
+                    "depends_on": ["llm_adapter", "tools"],
+                },
+                {
+                    "key": "llm_adapter",
+                    "title": "LLM Adapter Layer",
+                    "role": "Provides a provider-agnostic boundary for OpenAI, Claude, Gemini, and future OpenAI-compatible open-source backends.",
+                    "components": ["brain.ai.llm"],
+                    "depends_on": [],
+                },
+            ],
+            "request_flow": [
+                "Requests enter through the API gateway.",
+                "The API gateway routes AI work through the LLM adapter layer and the structured tools layer.",
+            ],
+            "boundaries": [
+                "Structured system outputs remain the source of truth.",
+                "LLM providers are swappable behind the adapter registry.",
+            ],
+            "extension_points": [
+                "Add new AI modules without changing the provider layer.",
+                "Add new providers through the LLM registry without changing orchestration code.",
+            ],
+            "interfaces": [
+                {
+                    "key": "brain_architecture",
+                    "path": "/api/v1/ai/brain/architecture",
+                    "method": "GET",
+                    "scope": "system",
+                    "description": "Layered blueprint for how the intelligence interface is composed across subsystems.",
+                }
+            ],
+        }
+
+        with patch("api.routers.ai.ai_svc.get_brain_architecture", return_value=payload):
+            r = client.get("/api/v1/ai/brain/architecture")
+
+        assert r.status_code == 200
+        body = r.json()
+        assert body["style"] == "layered_modular_orchestrator"
+        assert body["primary_path"] == ["API gateway", "LLM adapter layer", "tools"]
+        assert body["layers"][0]["key"] == "api_gateway"
+        assert body["interfaces"][0]["key"] == "brain_architecture"
+
     def test_brain_approach_route_returns_overview(self):
         payload = {
             "objective": "Intelligence interface across the system.",
-            "approach": "Use a modular orchestrator that pulls structured signals from the data bank, valuation engine, and blockchain rails before composing recommendations.",
+            "approach": "Run the intelligence interface through an API gateway, a provider-agnostic LLM adapter layer, and structured tools that pull from the data bank, valuation engine, and blockchain rails.",
+            "interface_chain": ["API gateway", "LLM adapter layer", "tools"],
             "systems": ["data_bank", "valuation", "blockchain"],
             "principles": [
                 "structured_context_before_generation",
                 "modular_modules_not_monolith_prompts",
             ],
             "orchestration_flow": [
-                "Pull planning, zoning, and site context from the data bank.",
-                "Assemble valuation, weighted logic, price regression, and hotspot signals.",
+                "Receive requests through the API gateway.",
+                "Route provider-specific generation through the LLM adapter layer.",
             ],
             "interfaces": [
                 {
@@ -596,6 +669,7 @@ class TestAIValidation:
         assert r.status_code == 200
         body = r.json()
         assert body["objective"] == "Intelligence interface across the system."
+        assert body["interface_chain"] == ["API gateway", "LLM adapter layer", "tools"]
         assert body["interfaces"][0]["key"] == "brain_approach"
         assert body["modules"][0]["source_system"] == "data_bank"
 

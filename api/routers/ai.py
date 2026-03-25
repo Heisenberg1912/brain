@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from api.deps import get_db
 from api.schemas import (
     AIBrainApproachOut,
+    AIBrainArchitectureOut,
     AIBrainModuleProfileOut,
     AIBrainResponse,
     AILLMProfileOut,
@@ -33,6 +34,11 @@ def llm_profile():
 @router.get("/brain/modules", response_model=list[AIBrainModuleProfileOut])
 def brain_modules():
     return ai_svc.list_brain_modules()
+
+
+@router.get("/brain/architecture", response_model=AIBrainArchitectureOut)
+def brain_architecture():
+    return ai_svc.get_brain_architecture()
 
 
 @router.get("/brain/approach", response_model=AIBrainApproachOut)

@@ -24,10 +24,22 @@ def test_get_brain_approach_returns_cross_system_overview():
     payload = brain_layer.get_brain_approach()
 
     assert payload["objective"] == "Intelligence interface across the system."
+    assert payload["interface_chain"] == ["API gateway", "LLM adapter layer", "tools"]
     assert payload["systems"] == ["data_bank", "valuation", "blockchain"]
     assert payload["modules"][0]["key"] == "context"
     assert payload["interfaces"][0]["key"] == "llm_profile"
     assert any(item["key"] == "compare_locations" for item in payload["interfaces"])
+
+
+def test_get_brain_architecture_returns_layered_blueprint():
+    payload = brain_layer.get_brain_architecture()
+
+    assert payload["style"] == "layered_modular_orchestrator"
+    assert payload["primary_path"] == ["API gateway", "LLM adapter layer", "tools"]
+    assert payload["layers"][0]["key"] == "api_gateway"
+    assert any(item["key"] == "llm_adapter" for item in payload["layers"])
+    assert any(item["key"] == "brain_architecture" for item in payload["interfaces"])
+    assert "Structured system outputs remain the source of truth." in payload["boundaries"]
 
 
 def test_build_brain_profile_returns_modular_response(monkeypatch):

@@ -1047,11 +1047,31 @@ class AIBrainInterfaceOut(BaseModel):
 class AIBrainApproachOut(BaseModel):
     objective: str
     approach: str
+    interface_chain: list[str] = Field(default_factory=list)
     systems: list[str] = Field(default_factory=list)
     principles: list[str] = Field(default_factory=list)
     orchestration_flow: list[str] = Field(default_factory=list)
     interfaces: list[AIBrainInterfaceOut] = Field(default_factory=list)
     modules: list[AIBrainModuleProfileOut] = Field(default_factory=list)
+
+
+class AIBrainArchitectureLayerOut(BaseModel):
+    key: str
+    title: str
+    role: str
+    components: list[str] = Field(default_factory=list)
+    depends_on: list[str] = Field(default_factory=list)
+
+
+class AIBrainArchitectureOut(BaseModel):
+    objective: str
+    style: str
+    primary_path: list[str] = Field(default_factory=list)
+    layers: list[AIBrainArchitectureLayerOut] = Field(default_factory=list)
+    request_flow: list[str] = Field(default_factory=list)
+    boundaries: list[str] = Field(default_factory=list)
+    extension_points: list[str] = Field(default_factory=list)
+    interfaces: list[AIBrainInterfaceOut] = Field(default_factory=list)
 
 
 class AILLMProviderOut(BaseModel):
@@ -1062,6 +1082,8 @@ class AILLMProviderOut(BaseModel):
     supports_text: bool = True
     supports_json: bool = False
     supports_system_instruction: bool = False
+    integration_style: str = "native"
+    open_source_ready: bool = False
     positioning: str = ""
 
 
