@@ -1,0 +1,167 @@
+{
+  "jobs": [
+    {
+      "record_type": "standard",
+      "urls": [
+        "https://dda.gov.in/faqs-building"
+      ],
+      "defaults": {
+        "country_code": "IN",
+        "admin_area": "Delhi",
+        "region_name": "Delhi Development Authority",
+        "standard_type": "bylaw",
+        "code": "DDA_FAQ_BUILDING_PERMIT",
+        "title": "DDA Building Permit FAQ",
+        "version_tag": "web_2026_q1",
+        "tags": [
+          "official",
+          "web",
+          "gemini",
+          "delhi",
+          "permit"
+        ]
+      },
+      "context": "Extract explicit building permit constraints, procedural requirements, cited codes, and review checkpoints relevant to land development and plan approval."
+    },
+    {
+      "record_type": "standard",
+      "urls": [
+        "https://mohua.gov.in/cms/Model-Building-Bye-Laws.php"
+      ],
+      "defaults": {
+        "country_code": "IN",
+        "admin_area": "National",
+        "region_name": "India",
+        "standard_type": "construction_guideline",
+        "code": "MOHUA_MODEL_BUILDING_BYE_LAWS",
+        "title": "Model Building Bye Laws Portal",
+        "version_tag": "web_2026_q1",
+        "tags": [
+          "official",
+          "web",
+          "gemini",
+          "national",
+          "bylaws"
+        ]
+      },
+      "context": "Extract explicit model building byelaw guidance, planning compliance themes, and nationally applicable rule categories useful for floor-plan and zoning validation."
+    },
+    {
+      "record_type": "standard",
+      "urls": [
+        "https://www.hmda.gov.in/planning-2/"
+      ],
+      "defaults": {
+        "country_code": "IN",
+        "admin_area": "Telangana",
+        "region_name": "Hyderabad Metropolitan Region",
+        "standard_type": "construction_guideline",
+        "code": "HMDA_MASTER_PLAN_PORTAL",
+        "title": "HMDA Master Plan Portal",
+        "version_tag": "web_2026_q1",
+        "tags": [
+          "official",
+          "web",
+          "gemini",
+          "hyderabad",
+          "masterplan"
+        ]
+      },
+      "context": "Extract explicit planning instruments, named master plans, land-use references, and regulatory planning hooks that affect development feasibility in the Hyderabad metropolitan region.",
+      "verify_ssl": false,
+      "timeout": 30
+    },
+    {
+      "record_type": "standard",
+      "urls": [
+        "https://www.cmdachennai.gov.in/masterplan2.html"
+      ],
+      "defaults": {
+        "country_code": "IN",
+        "admin_area": "Tamil Nadu",
+        "region_name": "Chennai Metropolitan Area",
+        "standard_type": "construction_guideline",
+        "code": "CMDA_DETAILED_DEVELOPMENT_PLANS",
+        "title": "CMDA Detailed Development Plans",
+        "version_tag": "web_2026_q1",
+        "tags": [
+          "official",
+          "web",
+          "gemini",
+          "chennai",
+          "masterplan"
+        ]
+      },
+      "context": "Extract approved development plan names, governing references, and any explicit planning-control signals that can support location intelligence and zoning interpretation."
+    },
+    {
+      "record_type": "standard",
+      "urls": [
+        "https://www.pmrda.gov.in/downloads/rules-regulations/"
+      ],
+      "defaults": {
+        "country_code": "IN",
+        "admin_area": "Maharashtra",
+        "region_name": "Pune Metropolitan Region",
+        "standard_type": "construction_guideline",
+        "code": "PMRDA_RULES_AND_REGULATIONS",
+        "title": "PMRDA Rules and Regulations Portal",
+        "version_tag": "web_2026_q1",
+        "tags": [
+          "official",
+          "web",
+          "gemini",
+          "pune",
+          "regulations"
+        ]
+      },
+      "context": "Extract explicit rule families, planning controls, approval references, and regulation categories relevant to metropolitan development in Pune."
+    },
+    {
+      "record_type": "standard",
+      "urls": [
+        "https://www.suratmunicipal.gov.in/Departments/TownPlanningDevelopmentPlans"
+      ],
+      "defaults": {
+        "country_code": "IN",
+        "admin_area": "Gujarat",
+        "region_name": "Surat",
+        "standard_type": "construction_guideline",
+        "code": "SURAT_TOWN_PLANNING_DEVELOPMENT_PLANS",
+        "title": "Surat Town Planning and Development Plans",
+        "version_tag": "web_2026_q1",
+        "tags": [
+          "official",
+          "web",
+          "gemini",
+          "surat",
+          "development-plan"
+        ]
+      },
+      "context": "Extract explicit town planning and development plan references, approval contexts, and development-control signals that influence buildability and land favorability."
+    },
+    {
+      "record_type": "standard",
+      "urls": [
+        "https://ppa.py.gov.in/puducherry-building-bye-laws-and-zoning-regulations-2012"
+      ],
+      "defaults": {
+        "country_code": "IN",
+        "admin_area": "Puducherry",
+        "region_name": "Puducherry",
+        "standard_type": "bylaw",
+        "code": "PPA_BUILDING_BYE_LAWS_ZONING_2012",
+        "title": "Puducherry Building Bye Laws and Zoning Regulations 2012",
+        "version_tag": "web_2026_q1",
+        "tags": [
+          "official",
+          "web",
+          "gemini",
+          "puducherry",
+          "zoning"
+        ]
+      },
+      "context": "Extract explicit zoning constraints, byelaw categories, plan-approval requirements, and development controls relevant to Puducherry."
+    }
+  ]
+}

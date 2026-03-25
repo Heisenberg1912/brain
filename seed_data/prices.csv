@@ -1,0 +1,223 @@
+location_name,price_per_sqft,property_type,recorded_date,source
+Whitefield Main,6500,apartment,2025-01-15,housing.com
+Whitefield Main,6200,apartment,2024-06-10,housing.com
+Whitefield Main,5800,apartment,2024-01-05,housing.com
+Whitefield Main,5400,apartment,2023-06-15,housing.com
+Whitefield Main,8200,villa,2025-01-20,nobroker
+ITPL Area,7200,apartment,2025-01-12,housing.com
+ITPL Area,6800,apartment,2024-06-08,housing.com
+ITPL Area,6300,apartment,2024-01-10,housing.com
+ITPL Area,5900,apartment,2023-06-20,housing.com
+Brookefield,7500,apartment,2025-02-01,housing.com
+Brookefield,7000,apartment,2024-06-15,housing.com
+Brookefield,6500,apartment,2024-01-20,housing.com
+Kundalahalli,6800,apartment,2025-01-18,nobroker
+Kundalahalli,6400,apartment,2024-06-12,nobroker
+Kadugodi,5200,apartment,2025-01-10,housing.com
+Kadugodi,4800,apartment,2024-06-05,housing.com
+Kadugodi,4400,apartment,2024-01-08,housing.com
+Kadugodi,6500,villa,2025-02-05,nobroker
+Varthur,5800,apartment,2025-01-22,housing.com
+Varthur,5400,apartment,2024-06-18,housing.com
+Varthur,5000,apartment,2024-01-15,housing.com
+Varthur,7000,plot,2025-01-25,nobroker
+Marathahalli,7800,apartment,2025-01-14,housing.com
+Marathahalli,7300,apartment,2024-06-11,housing.com
+Marathahalli,6800,apartment,2024-01-07,housing.com
+Bellandur,8500,apartment,2025-02-03,housing.com
+Bellandur,8000,apartment,2024-06-20,housing.com
+Bellandur,7400,apartment,2024-01-18,housing.com
+Bellandur,7000,apartment,2023-06-10,housing.com
+Sarjapur Road,6200,apartment,2025-01-16,housing.com
+Sarjapur Road,5800,apartment,2024-06-13,housing.com
+Sarjapur Road,5400,apartment,2024-01-12,housing.com
+Sarjapur Road,7800,villa,2025-02-10,nobroker
+HSR Layout,9500,apartment,2025-01-20,housing.com
+HSR Layout,9000,apartment,2024-06-16,housing.com
+HSR Layout,8400,apartment,2024-01-14,housing.com
+HSR Layout,8000,apartment,2023-06-12,housing.com
+Koramangala,12000,apartment,2025-01-25,housing.com
+Koramangala,11200,apartment,2024-06-22,housing.com
+Koramangala,10500,apartment,2024-01-20,housing.com
+Koramangala,9800,apartment,2023-06-18,housing.com
+Electronic City,5000,apartment,2025-01-11,housing.com
+Electronic City,4700,apartment,2024-06-07,housing.com
+Electronic City,4400,apartment,2024-01-05,housing.com
+Hebbal,8000,apartment,2025-02-05,housing.com
+Hebbal,7500,apartment,2024-06-25,housing.com
+Hebbal,7000,apartment,2024-01-22,housing.com
+Yelahanka,5500,apartment,2025-01-13,housing.com
+Yelahanka,5100,apartment,2024-06-09,housing.com
+Yelahanka,4800,apartment,2024-01-06,housing.com
+Devanahalli,4200,apartment,2025-01-17,housing.com
+Devanahalli,3900,apartment,2024-06-14,housing.com
+Devanahalli,3600,apartment,2024-01-11,housing.com
+Devanahalli,5500,plot,2025-02-08,nobroker
+Indiranagar,14000,apartment,2025-01-28,housing.com
+Indiranagar,13200,apartment,2024-06-24,housing.com
+Indiranagar,12500,apartment,2024-01-19,housing.com
+Jayanagar,11000,apartment,2025-01-23,housing.com
+Jayanagar,10300,apartment,2024-06-19,housing.com
+Jayanagar,9700,apartment,2024-01-17,housing.com
+Rajajinagar,9000,apartment,2025-01-21,housing.com
+Rajajinagar,8500,apartment,2024-06-17,housing.com
+Rajajinagar,8000,apartment,2024-01-13,housing.com
+KR Puram,5500,apartment,2025-01-19,housing.com
+KR Puram,5100,apartment,2024-06-10,housing.com
+KR Puram,4800,apartment,2024-01-09,housing.com
+Hennur,6000,apartment,2025-02-02,housing.com
+Hennur,5600,apartment,2024-06-21,housing.com
+Hennur,5200,apartment,2024-01-16,housing.com
+Bandra Kurla Complex,32000,office,2025-02-10,magicbricks
+Bandra Kurla Complex,29800,office,2024-06-15,magicbricks
+Bandra Kurla Complex,27500,office,2023-12-20,magicbricks
+Powai,22500,apartment,2025-02-12,housing.com
+Powai,21000,apartment,2024-06-18,housing.com
+Powai,19600,apartment,2024-01-10,housing.com
+Gurugram Cyber City,18500,office,2025-02-08,99acres
+Gurugram Cyber City,17000,office,2024-06-22,99acres
+Gurugram Cyber City,15500,office,2024-01-14,99acres
+Noida Sector 62,11000,apartment,2025-02-06,housing.com
+Noida Sector 62,10100,apartment,2024-06-20,housing.com
+Noida Sector 62,9300,apartment,2024-01-18,housing.com
+HITEC City,9800,apartment,2025-02-09,housing.com
+HITEC City,9100,apartment,2024-06-17,housing.com
+HITEC City,8400,apartment,2024-01-11,housing.com
+Gachibowli,10500,apartment,2025-02-11,housing.com
+Gachibowli,9800,apartment,2024-06-19,housing.com
+Gachibowli,9100,apartment,2024-01-12,housing.com
+OMR Perungudi,9500,apartment,2025-02-07,housing.com
+OMR Perungudi,8900,apartment,2024-06-21,housing.com
+OMR Perungudi,8200,apartment,2024-01-16,housing.com
+Hinjawadi,8600,apartment,2025-02-05,housing.com
+Hinjawadi,7900,apartment,2024-06-14,housing.com
+Hinjawadi,7200,apartment,2024-01-09,housing.com
+Kharadi,9800,apartment,2025-02-13,housing.com
+Kharadi,9000,apartment,2024-06-23,housing.com
+Kharadi,8300,apartment,2024-01-17,housing.com
+New Town,7800,apartment,2025-02-04,housing.com
+New Town,7200,apartment,2024-06-12,housing.com
+New Town,6600,apartment,2024-01-08,housing.com
+GIFT City,12500,commercial,2025-02-14,magicbricks
+GIFT City,11400,commercial,2024-06-24,magicbricks
+GIFT City,10200,commercial,2024-01-21,magicbricks
+Kakkanad,7600,apartment,2025-02-03,housing.com
+Kakkanad,7000,apartment,2024-06-11,housing.com
+Kakkanad,6400,apartment,2024-01-07,housing.com
+Patia,6800,apartment,2025-02-02,housing.com
+Patia,6200,apartment,2024-06-10,housing.com
+Patia,5600,apartment,2024-01-06,housing.com
+IT Park Chandigarh,10200,apartment,2025-02-01,housing.com
+IT Park Chandigarh,9400,apartment,2024-06-09,housing.com
+IT Park Chandigarh,8700,apartment,2024-01-05,housing.com
+GS Road,8400,commercial,2025-02-15,99acres
+GS Road,7800,commercial,2024-06-25,99acres
+GS Road,7200,commercial,2024-01-22,99acres
+Gomti Nagar,8800,apartment,2025-02-16,housing.com
+Gomti Nagar,8100,apartment,2024-06-26,housing.com
+Gomti Nagar,7400,apartment,2024-01-23,housing.com
+Lower Parel,28500,apartment,2025-02-18,magicbricks
+Lower Parel,26200,apartment,2024-06-28,magicbricks
+Lower Parel,24000,apartment,2024-01-25,magicbricks
+Andheri East,19500,apartment,2025-02-19,housing.com
+Andheri East,18100,apartment,2024-06-27,housing.com
+Andheri East,16800,apartment,2024-01-24,housing.com
+Golf Course Road,21000,apartment,2025-02-20,99acres
+Golf Course Road,19300,apartment,2024-06-29,99acres
+Golf Course Road,17700,apartment,2024-01-26,99acres
+Noida Sector 150,9800,apartment,2025-02-21,housing.com
+Noida Sector 150,9100,apartment,2024-06-30,housing.com
+Noida Sector 150,8400,apartment,2024-01-27,housing.com
+Kondapur,9200,apartment,2025-02-22,housing.com
+Kondapur,8500,apartment,2024-07-01,housing.com
+Kondapur,7800,apartment,2024-01-28,housing.com
+Kokapet,11500,apartment,2025-02-23,housing.com
+Kokapet,10400,apartment,2024-07-02,housing.com
+Kokapet,9300,apartment,2024-01-29,housing.com
+Guindy,11500,apartment,2025-02-24,housing.com
+Guindy,10600,apartment,2024-07-03,housing.com
+Guindy,9800,apartment,2024-01-30,housing.com
+Sholinganallur,9100,apartment,2025-02-25,housing.com
+Sholinganallur,8400,apartment,2024-07-04,housing.com
+Sholinganallur,7700,apartment,2024-01-31,housing.com
+Baner,11200,apartment,2025-02-26,housing.com
+Baner,10200,apartment,2024-07-05,housing.com
+Baner,9300,apartment,2024-02-01,housing.com
+Wakad,9300,apartment,2025-02-27,housing.com
+Wakad,8500,apartment,2024-07-06,housing.com
+Wakad,7800,apartment,2024-02-02,housing.com
+Salt Lake Sector V,9200,commercial,2025-02-28,99acres
+Salt Lake Sector V,8500,commercial,2024-07-07,99acres
+Salt Lake Sector V,7800,commercial,2024-02-03,99acres
+Rajarhat,8300,apartment,2025-03-01,housing.com
+Rajarhat,7600,apartment,2024-07-08,housing.com
+Rajarhat,6900,apartment,2024-02-04,housing.com
+SG Highway,12500,commercial,2025-03-02,magicbricks
+SG Highway,11400,commercial,2024-07-09,magicbricks
+SG Highway,10300,commercial,2024-02-05,magicbricks
+Prahlad Nagar,10800,apartment,2025-03-03,housing.com
+Prahlad Nagar,9800,apartment,2024-07-10,housing.com
+Prahlad Nagar,8900,apartment,2024-02-06,housing.com
+Edappally,8200,apartment,2025-03-04,housing.com
+Edappally,7500,apartment,2024-07-11,housing.com
+Edappally,6800,apartment,2024-02-07,housing.com
+Worli,31000,apartment,2025-03-05,magicbricks
+Worli,28700,apartment,2024-07-12,magicbricks
+Worli,26300,apartment,2024-02-08,magicbricks
+Chembur,17800,apartment,2025-03-06,housing.com
+Chembur,16500,apartment,2024-07-13,housing.com
+Chembur,15200,apartment,2024-02-09,housing.com
+Sohna Road,16500,apartment,2025-03-07,99acres
+Sohna Road,15200,apartment,2024-07-14,99acres
+Sohna Road,13800,apartment,2024-02-10,99acres
+Dwarka Expressway,15800,apartment,2025-03-08,99acres
+Dwarka Expressway,14300,apartment,2024-07-15,99acres
+Dwarka Expressway,12900,apartment,2024-02-11,99acres
+Noida Sector 137,10200,apartment,2025-03-09,housing.com
+Noida Sector 137,9300,apartment,2024-07-16,housing.com
+Noida Sector 137,8500,apartment,2024-02-12,housing.com
+Noida Sector 142,11000,apartment,2025-03-10,housing.com
+Noida Sector 142,10000,apartment,2024-07-17,housing.com
+Noida Sector 142,9200,apartment,2024-02-13,housing.com
+Madhapur,12000,apartment,2025-03-11,housing.com
+Madhapur,11100,apartment,2024-07-18,housing.com
+Madhapur,10100,apartment,2024-02-14,housing.com
+Nanakramguda,13500,apartment,2025-03-12,housing.com
+Nanakramguda,12200,apartment,2024-07-19,housing.com
+Nanakramguda,11000,apartment,2024-02-15,housing.com
+Siruseri,7800,apartment,2025-03-13,housing.com
+Siruseri,7200,apartment,2024-07-20,housing.com
+Siruseri,6600,apartment,2024-02-16,housing.com
+Porur,9800,apartment,2025-03-14,housing.com
+Porur,9000,apartment,2024-07-21,housing.com
+Porur,8200,apartment,2024-02-17,housing.com
+Magarpatta,12800,apartment,2025-03-15,housing.com
+Magarpatta,11700,apartment,2024-07-22,housing.com
+Magarpatta,10700,apartment,2024-02-18,housing.com
+Balewadi,11800,apartment,2025-03-16,housing.com
+Balewadi,10700,apartment,2024-07-23,housing.com
+Balewadi,9700,apartment,2024-02-19,housing.com
+EM Bypass,10100,apartment,2025-03-17,housing.com
+EM Bypass,9200,apartment,2024-07-24,housing.com
+EM Bypass,8400,apartment,2024-02-20,housing.com
+Topsia,8700,commercial,2025-03-18,99acres
+Topsia,7900,commercial,2024-07-25,99acres
+Topsia,7200,commercial,2024-02-21,99acres
+Thaltej,11200,apartment,2025-03-19,housing.com
+Thaltej,10200,apartment,2024-07-26,housing.com
+Thaltej,9300,apartment,2024-02-22,housing.com
+Science City,10900,apartment,2025-03-20,housing.com
+Science City,9950,apartment,2024-07-27,housing.com
+Science City,9050,apartment,2024-02-23,housing.com
+Marine Drive,11200,apartment,2025-03-21,housing.com
+Marine Drive,10200,apartment,2024-07-28,housing.com
+Marine Drive,9300,apartment,2024-02-24,housing.com
+Aerocity,24500,commercial,2025-03-22,magicbricks
+Aerocity,22600,commercial,2024-07-29,magicbricks
+Aerocity,20800,commercial,2024-02-25,magicbricks
+Okhla Phase 1,15800,commercial,2025-03-23,99acres
+Okhla Phase 1,14600,commercial,2024-07-30,99acres
+Okhla Phase 1,13300,commercial,2024-02-26,99acres
+Netaji Subhash Place,18500,commercial,2025-03-24,99acres
+Netaji Subhash Place,17100,commercial,2024-07-31,99acres
+Netaji Subhash Place,15600,commercial,2024-02-27,99acres

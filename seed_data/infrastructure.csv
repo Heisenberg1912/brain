@@ -1,0 +1,97 @@
+name,infra_type,country_code,state,city,lat,lng,status,source
+Whitefield Metro Station,metro_station,IN,Karnataka,Bangalore,12.9698,77.7500,operational,namma_metro
+ITPL Metro Station,metro_station,IN,Karnataka,Bangalore,12.9854,77.7381,under_construction,namma_metro
+Kadugodi Metro Station,metro_station,IN,Karnataka,Bangalore,12.9940,77.7637,operational,namma_metro
+Marathahalli Metro Station,metro_station,IN,Karnataka,Bangalore,12.9591,77.6974,under_construction,namma_metro
+KR Puram Metro Station,metro_station,IN,Karnataka,Bangalore,13.0077,77.6969,operational,namma_metro
+Indiranagar Metro Station,metro_station,IN,Karnataka,Bangalore,12.9784,77.6408,operational,namma_metro
+Hebbal Metro Station,metro_station,IN,Karnataka,Bangalore,13.0358,77.5970,under_construction,namma_metro
+Silk Board Metro Station,metro_station,IN,Karnataka,Bangalore,12.9170,77.6230,under_construction,namma_metro
+Bellandur Metro Station,metro_station,IN,Karnataka,Bangalore,12.9260,77.6762,planned,namma_metro
+HSR Layout Metro Station,metro_station,IN,Karnataka,Bangalore,12.9116,77.6389,planned,namma_metro
+Outer Ring Road,highway,IN,Karnataka,Bangalore,12.9500,77.7200,operational,osm
+Whitefield Main Road,highway,IN,Karnataka,Bangalore,12.9698,77.7500,operational,osm
+Old Airport Road,highway,IN,Karnataka,Bangalore,12.9700,77.6500,operational,osm
+NICE Road,highway,IN,Karnataka,Bangalore,12.8800,77.6000,operational,osm
+Sarjapur-Marathahalli Road,highway,IN,Karnataka,Bangalore,12.9350,77.7000,operational,osm
+Kempegowda International Airport,airport,IN,Karnataka,Bangalore,13.1989,77.7068,operational,osm
+Inventure Academy,school,IN,Karnataka,Bangalore,12.9300,77.7400,operational,opencity
+Whitefield Global School,school,IN,Karnataka,Bangalore,12.9650,77.7550,operational,opencity
+Ryan International Kundalahalli,school,IN,Karnataka,Bangalore,12.9611,77.7253,operational,opencity
+Greenwood High School,school,IN,Karnataka,Bangalore,12.9200,77.6900,operational,opencity
+NPS Koramangala,school,IN,Karnataka,Bangalore,12.9352,77.6245,operational,opencity
+Columbia Asia Whitefield,hospital,IN,Karnataka,Bangalore,12.9700,77.7450,operational,osm
+Manipal Hospital Whitefield,hospital,IN,Karnataka,Bangalore,12.9800,77.7300,operational,osm
+Narayana Health Bommasandra,hospital,IN,Karnataka,Bangalore,12.8400,77.6700,operational,osm
+Fortis Hospital Bannerghatta,hospital,IN,Karnataka,Bangalore,12.8800,77.6000,operational,osm
+Sakra World Hospital Bellandur,hospital,IN,Karnataka,Bangalore,12.9260,77.6762,operational,osm
+Embassy Tech Village,economic_zone,IN,Karnataka,Bangalore,12.9300,77.6800,operational,osm
+Manyata Tech Park,economic_zone,IN,Karnataka,Bangalore,13.0450,77.6200,operational,osm
+ITPL Park,economic_zone,IN,Karnataka,Bangalore,12.9854,77.7381,operational,osm
+Electronic City Phase 1,economic_zone,IN,Karnataka,Bangalore,12.8456,77.6603,operational,osm
+Bagmane Tech Park,economic_zone,IN,Karnataka,Bangalore,12.9700,77.6950,operational,osm
+BKC Metro Station,metro_station,IN,Maharashtra,Mumbai,19.0635,72.8656,operational,mumbai_metro
+Powai Business District,tech_park,IN,Maharashtra,Mumbai,19.1185,72.9050,operational,osm
+Cyber City Metro Station,metro_station,IN,Haryana,Gurugram,28.4930,77.0890,operational,dmrc
+DLF Cyber Hub,economic_zone,IN,Haryana,Gurugram,28.4950,77.0880,operational,osm
+Noida Electronic City Metro,metro_station,IN,Uttar Pradesh,Noida,28.6270,77.3640,operational,dmrc
+Noida Expressway,highway,IN,Uttar Pradesh,Noida,28.6000,77.3500,operational,osm
+HITEC City Metro,metro_station,IN,Telangana,Hyderabad,17.4497,78.3825,operational,hyderabad_metro
+Cyber Towers,tech_park,IN,Telangana,Hyderabad,17.4500,78.3810,operational,osm
+Raidurg Metro Station,metro_station,IN,Telangana,Hyderabad,17.4352,78.3841,operational,hyderabad_metro
+Financial District,economic_zone,IN,Telangana,Hyderabad,17.4239,78.3540,operational,osm
+Perungudi MRTS,railway_station,IN,Tamil Nadu,Chennai,12.9639,80.2464,operational,osm
+TIDEL Park,tech_park,IN,Tamil Nadu,Chennai,12.9797,80.2488,operational,osm
+Rajiv Chowk Metro Station,metro_station,IN,West Bengal,Kolkata,22.5790,88.4330,operational,kmrc
+New Town IT Hub,tech_park,IN,West Bengal,Kolkata,22.5820,88.4720,operational,osm
+Hinjawadi IT Park,tech_park,IN,Maharashtra,Pune,18.5900,73.7330,operational,osm
+Mumbai-Bengaluru Highway,highway,IN,Maharashtra,Pune,18.5970,73.7390,operational,osm
+World Trade Center Kharadi,economic_zone,IN,Maharashtra,Pune,18.5528,73.9462,operational,osm
+Ramwadi Metro Station,metro_station,IN,Maharashtra,Pune,18.5510,73.9158,operational,pune_metro
+GIFT City Business District,economic_zone,IN,Gujarat,Gandhinagar,23.1660,72.6830,operational,osm
+Ahmedabad-Gandhinagar Expressway,highway,IN,Gujarat,Gandhinagar,23.1750,72.6500,operational,osm
+InfoPark Kakkanad,tech_park,IN,Kerala,Kochi,10.0145,76.3652,operational,osm
+Seaport-Airport Road,highway,IN,Kerala,Kochi,10.0080,76.3530,operational,osm
+Infocity Bhubaneswar,tech_park,IN,Odisha,Bhubaneswar,20.3536,85.8183,operational,osm
+Nandankanan Road,highway,IN,Odisha,Bhubaneswar,20.3650,85.8300,operational,osm
+Chandigarh IT Park,economic_zone,IN,Chandigarh,Chandigarh,30.7280,76.8100,operational,osm
+Chandigarh Railway Station,railway_station,IN,Chandigarh,Chandigarh,30.7034,76.8208,operational,osm
+GS Road Corridor,highway,IN,Assam,Guwahati,26.1450,91.7900,operational,osm
+Khanapara Transit Hub,railway_station,IN,Assam,Guwahati,26.1240,91.8110,operational,osm
+Gomti Nagar Railway Station,railway_station,IN,Uttar Pradesh,Lucknow,26.8450,81.0080,operational,osm
+Shaheed Path,highway,IN,Uttar Pradesh,Lucknow,26.8400,81.0000,operational,osm
+Lower Parel Station,railway_station,IN,Maharashtra,Mumbai,18.9954,72.8295,operational,osm
+Andheri Metro Station,metro_station,IN,Maharashtra,Mumbai,19.1197,72.8464,operational,mumbai_metro
+Sector 54 Chowk Metro,metro_station,IN,Haryana,Gurugram,28.4405,77.1045,operational,dmrc
+Noida Sector 148 Metro,metro_station,IN,Uttar Pradesh,Noida,28.5467,77.3344,operational,dmrc
+Kondapur Tech Hub,tech_park,IN,Telangana,Hyderabad,17.4688,78.3585,operational,osm
+Kokapet Financial Hub,economic_zone,IN,Telangana,Hyderabad,17.4015,78.3358,under_construction,osm
+Guindy Metro Station,metro_station,IN,Tamil Nadu,Chennai,13.0067,80.2122,operational,chennai_metro
+Sholinganallur Junction,highway,IN,Tamil Nadu,Chennai,12.9011,80.2270,operational,osm
+Baner Tech Hub,tech_park,IN,Maharashtra,Pune,18.5595,73.7892,operational,osm
+Wakad Corridor,highway,IN,Maharashtra,Pune,18.5927,73.7513,operational,osm
+Salt Lake Sector V Metro,metro_station,IN,West Bengal,Kolkata,22.5690,88.4330,operational,kmrc
+Rajarhat IT Cluster,tech_park,IN,West Bengal,Kolkata,22.6140,88.4515,operational,osm
+SG Highway Transit Corridor,highway,IN,Gujarat,Ahmedabad,23.0475,72.5190,operational,osm
+Prahlad Nagar Business Hub,economic_zone,IN,Gujarat,Ahmedabad,23.0120,72.5130,operational,osm
+Edappally Metro Station,metro_station,IN,Kerala,Kochi,10.0260,76.3080,operational,kochi_metro
+Worli Sea Link Access,highway,IN,Maharashtra,Mumbai,19.0171,72.8148,operational,osm
+Chembur Monorail Interchange,railway_station,IN,Maharashtra,Mumbai,19.0522,72.8983,operational,osm
+Sohna Road Business District,economic_zone,IN,Haryana,Gurugram,28.4121,77.0414,operational,osm
+Dwarka Expressway Corridor,highway,IN,Haryana,Gurugram,28.5035,76.9995,operational,osm
+Noida Sector 137 Metro,metro_station,IN,Uttar Pradesh,Noida,28.5095,77.4071,operational,dmrc
+Noida Sector 142 Metro,metro_station,IN,Uttar Pradesh,Noida,28.5232,77.4152,operational,dmrc
+Madhapur Metro Station,metro_station,IN,Telangana,Hyderabad,17.4487,78.3910,operational,hyderabad_metro
+Nanakramguda Financial Hub,economic_zone,IN,Telangana,Hyderabad,17.4145,78.3428,under_construction,osm
+Siruseri SIPCOT IT Park,tech_park,IN,Tamil Nadu,Chennai,12.8238,80.2264,operational,osm
+Porur Junction,highway,IN,Tamil Nadu,Chennai,13.0380,80.1570,operational,osm
+Magarpatta City,economic_zone,IN,Maharashtra,Pune,18.5165,73.9285,operational,osm
+Balewadi High Street,economic_zone,IN,Maharashtra,Pune,18.5680,73.7736,operational,osm
+EM Bypass Connector,highway,IN,West Bengal,Kolkata,22.5155,88.4030,operational,osm
+Topsia Logistics Hub,economic_zone,IN,West Bengal,Kolkata,22.5418,88.3951,operational,osm
+Thaltej BRTS Corridor,highway,IN,Gujarat,Ahmedabad,23.0510,72.5150,operational,osm
+Science City Innovation Park,tech_park,IN,Gujarat,Ahmedabad,23.0708,72.4931,operational,osm
+Marine Drive Transit Hub,railway_station,IN,Kerala,Kochi,9.9808,76.2788,operational,osm
+Aerocity Metro Station,metro_station,IN,Delhi,Delhi,28.5488,77.1209,operational,dmrc
+Okhla Industrial Estate,economic_zone,IN,Delhi,Delhi,28.5318,77.2731,operational,osm
+Netaji Subhash Place Metro,metro_station,IN,Delhi,Delhi,28.6960,77.1518,operational,dmrc

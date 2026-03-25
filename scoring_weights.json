@@ -1,0 +1,21 @@
+{
+  "land_value": {
+    "avg_price_normalized": 0.30,
+    "infra_proximity": 0.25,
+    "zoning_favorability": 0.20,
+    "density": 0.15,
+    "price_trend": 0.10
+  },
+  "development_potential": {
+    "fsi_headroom": 0.30,
+    "zoning_type_value": 0.25,
+    "infra_planned": 0.25,
+    "price_growth_rate": 0.20
+  },
+  "future_appreciation": {
+    "price_trend_5yr": 0.25,
+    "infra_pipeline": 0.30,
+    "population_growth": 0.20,
+    "zoning_shift_potential": 0.25
+  }
+}

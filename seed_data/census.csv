@@ -1,0 +1,72 @@
+location_name,year,population,density_per_sqkm,growth_rate_pct,households,source
+Whitefield Main,2021,185000,12500.00,4.20,42000,census_estimate
+ITPL Area,2021,120000,15000.00,5.10,28000,census_estimate
+Brookefield,2021,95000,11000.00,4.80,22000,census_estimate
+Kundalahalli,2021,78000,13000.00,3.90,18000,census_estimate
+Kadugodi,2021,55000,6500.00,6.20,12500,census_estimate
+Varthur,2021,72000,7000.00,7.50,16000,census_estimate
+Marathahalli,2021,210000,18000.00,3.50,48000,census_estimate
+Bellandur,2021,160000,14000.00,5.80,37000,census_estimate
+Sarjapur Road,2021,130000,9500.00,6.50,30000,census_estimate
+HSR Layout,2021,145000,16000.00,3.20,34000,census_estimate
+Koramangala,2021,175000,20000.00,2.10,42000,census_estimate
+Electronic City,2021,200000,11000.00,4.00,45000,census_estimate
+Hebbal,2021,110000,12000.00,3.80,26000,census_estimate
+Yelahanka,2021,95000,7500.00,4.50,22000,census_estimate
+Devanahalli,2021,45000,3500.00,8.20,10000,census_estimate
+Indiranagar,2021,125000,22000.00,1.50,30000,census_estimate
+Jayanagar,2021,155000,19000.00,1.80,37000,census_estimate
+Rajajinagar,2021,140000,17000.00,2.00,33000,census_estimate
+KR Puram,2021,98000,10000.00,4.80,23000,census_estimate
+Hennur,2021,85000,8500.00,5.50,20000,census_estimate
+Bandra Kurla Complex,2021,95000,15500.00,3.20,22000,census_estimate
+Powai,2021,130000,14500.00,3.50,32000,census_estimate
+Gurugram Cyber City,2021,210000,12000.00,5.10,48000,census_estimate
+Noida Sector 62,2021,160000,13000.00,4.70,36000,census_estimate
+HITEC City,2021,180000,14000.00,5.40,41000,census_estimate
+Gachibowli,2021,155000,11800.00,5.80,35000,census_estimate
+OMR Perungudi,2021,145000,12500.00,4.60,34000,census_estimate
+Hinjawadi,2021,125000,7600.00,6.40,30000,census_estimate
+Kharadi,2021,140000,8700.00,6.00,33000,census_estimate
+New Town,2021,175000,9800.00,6.10,39000,census_estimate
+GIFT City,2021,65000,4800.00,8.40,15000,census_estimate
+Kakkanad,2021,98000,6900.00,5.20,23000,census_estimate
+Patia,2021,110000,8200.00,6.30,26000,census_estimate
+IT Park Chandigarh,2021,85000,9200.00,4.10,20000,census_estimate
+GS Road,2021,120000,9800.00,5.00,27000,census_estimate
+Gomti Nagar,2021,150000,10500.00,4.80,36000,census_estimate
+Lower Parel,2021,115000,18000.00,3.60,28000,census_estimate
+Andheri East,2021,175000,16500.00,4.20,42000,census_estimate
+Golf Course Road,2021,150000,12800.00,5.00,34000,census_estimate
+Noida Sector 150,2021,95000,7800.00,7.10,22000,census_estimate
+Kondapur,2021,140000,13200.00,5.70,33000,census_estimate
+Kokapet,2021,90000,7200.00,8.10,21000,census_estimate
+Guindy,2021,155000,14500.00,4.10,36000,census_estimate
+Sholinganallur,2021,135000,10200.00,5.80,31000,census_estimate
+Baner,2021,125000,9300.00,5.90,29000,census_estimate
+Wakad,2021,120000,9800.00,6.20,28000,census_estimate
+Salt Lake Sector V,2021,110000,11500.00,4.00,25000,census_estimate
+Rajarhat,2021,145000,9000.00,6.40,33000,census_estimate
+SG Highway,2021,130000,11000.00,5.20,30000,census_estimate
+Prahlad Nagar,2021,118000,9800.00,4.80,27000,census_estimate
+Edappally,2021,105000,8600.00,4.90,24000,census_estimate
+Worli,2021,120000,18500.00,3.40,29000,census_estimate
+Chembur,2021,165000,17200.00,3.90,40000,census_estimate
+Sohna Road,2021,138000,11000.00,5.60,32000,census_estimate
+Dwarka Expressway,2021,102000,7600.00,8.00,24000,census_estimate
+Noida Sector 137,2021,98000,8400.00,6.80,23000,census_estimate
+Noida Sector 142,2021,108000,9000.00,6.50,25000,census_estimate
+Madhapur,2021,148000,13800.00,5.40,34000,census_estimate
+Nanakramguda,2021,95000,7600.00,8.30,22000,census_estimate
+Siruseri,2021,88000,6900.00,7.00,20000,census_estimate
+Porur,2021,145000,12600.00,4.40,34000,census_estimate
+Magarpatta,2021,118000,9600.00,5.60,28000,census_estimate
+Balewadi,2021,112000,9100.00,6.00,26000,census_estimate
+EM Bypass,2021,132000,10200.00,4.90,30000,census_estimate
+Topsia,2021,108000,11800.00,4.20,25000,census_estimate
+Thaltej,2021,126000,10400.00,5.00,29000,census_estimate
+Science City,2021,98000,8200.00,6.70,23000,census_estimate
+Marine Drive,2021,82000,9800.00,3.80,19000,census_estimate
+Aerocity,2021,76000,8900.00,5.30,17000,census_estimate
+Okhla Phase 1,2021,124000,14300.00,4.40,29000,census_estimate
+Netaji Subhash Place,2021,116000,13200.00,4.60,27000,census_estimate

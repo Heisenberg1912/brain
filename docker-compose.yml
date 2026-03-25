@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: builtattic-db
+    environment:
+      POSTGRES_USER: builtattic
+      POSTGRES_PASSWORD: builtattic_dev
+      POSTGRES_DB: builtattic_brain
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

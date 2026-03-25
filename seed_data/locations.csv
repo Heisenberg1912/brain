@@ -1,0 +1,72 @@
+name,country_code,state,city,locality,ward,pin_code,lat,lng
+Whitefield Main,IN,Karnataka,Bangalore,Whitefield,Mahadevapura,560066,12.9698,77.7500
+ITPL Area,IN,Karnataka,Bangalore,Whitefield,Mahadevapura,560066,12.9854,77.7381
+Brookefield,IN,Karnataka,Bangalore,Brookefield,Mahadevapura,560037,12.9567,77.7183
+Kundalahalli,IN,Karnataka,Bangalore,Kundalahalli,Mahadevapura,560037,12.9611,77.7253
+Kadugodi,IN,Karnataka,Bangalore,Kadugodi,Mahadevapura,560067,12.9940,77.7637
+Varthur,IN,Karnataka,Bangalore,Varthur,Mahadevapura,560087,12.9410,77.7440
+Marathahalli,IN,Karnataka,Bangalore,Marathahalli,Mahadevapura,560037,12.9591,77.6974
+Bellandur,IN,Karnataka,Bangalore,Bellandur,Mahadevapura,560103,12.9260,77.6762
+Sarjapur Road,IN,Karnataka,Bangalore,Sarjapur Road,Bommanahalli,560035,12.9100,77.6870
+HSR Layout,IN,Karnataka,Bangalore,HSR Layout,Bommanahalli,560102,12.9116,77.6389
+Koramangala,IN,Karnataka,Bangalore,Koramangala,South,560034,12.9352,77.6245
+Electronic City,IN,Karnataka,Bangalore,Electronic City,Bommanahalli,560100,12.8456,77.6603
+Hebbal,IN,Karnataka,Bangalore,Hebbal,North,560024,13.0358,77.5970
+Yelahanka,IN,Karnataka,Bangalore,Yelahanka,Yelahanka,560064,13.1007,77.5963
+Devanahalli,IN,Karnataka,Bangalore,Devanahalli,Yelahanka,562110,13.2473,77.7117
+Indiranagar,IN,Karnataka,Bangalore,Indiranagar,East,560038,12.9784,77.6408
+Jayanagar,IN,Karnataka,Bangalore,Jayanagar,South,560041,12.9308,77.5838
+Rajajinagar,IN,Karnataka,Bangalore,Rajajinagar,West,560010,12.9906,77.5527
+KR Puram,IN,Karnataka,Bangalore,KR Puram,Mahadevapura,560036,13.0077,77.6969
+Hennur,IN,Karnataka,Bangalore,Hennur,North,560043,13.0451,77.6384
+Bandra Kurla Complex,IN,Maharashtra,Mumbai,BKC,Bandra East,400051,19.0607,72.8656
+Powai,IN,Maharashtra,Mumbai,Powai,L Ward,400076,19.1176,72.9060
+Gurugram Cyber City,IN,Haryana,Gurugram,DLF Cyber City,Gurugram,122002,28.4940,77.0890
+Noida Sector 62,IN,Uttar Pradesh,Noida,Sector 62,Gautam Buddh Nagar,201309,28.6280,77.3649
+HITEC City,IN,Telangana,Hyderabad,HITEC City,Serilingampally,500081,17.4435,78.3772
+Gachibowli,IN,Telangana,Hyderabad,Gachibowli,Serilingampally,500032,17.4401,78.3489
+OMR Perungudi,IN,Tamil Nadu,Chennai,Perungudi,Sholinganallur,600096,12.9629,80.2405
+Hinjawadi,IN,Maharashtra,Pune,Hinjawadi,Mulshi,411057,18.5912,73.7389
+Kharadi,IN,Maharashtra,Pune,Kharadi,Haveli,411014,18.5518,73.9474
+New Town,IN,West Bengal,Kolkata,New Town,New Town,700156,22.5797,88.4794
+GIFT City,IN,Gujarat,Gandhinagar,GIFT City,Gandhinagar,382355,23.1645,72.6830
+Kakkanad,IN,Kerala,Kochi,Kakkanad,Ernakulam,682030,10.0159,76.3419
+Patia,IN,Odisha,Bhubaneswar,Patia,North Bhubaneswar,751024,20.3553,85.8187
+IT Park Chandigarh,IN,Chandigarh,Chandigarh,IT Park,Manimajra,160101,30.7251,76.8106
+GS Road,IN,Assam,Guwahati,GS Road,Dispur,781005,26.1445,91.7898
+Gomti Nagar,IN,Uttar Pradesh,Lucknow,Gomti Nagar,Gomti Nagar,226010,26.8556,80.9992
+Lower Parel,IN,Maharashtra,Mumbai,Lower Parel,G South,400013,18.9980,72.8258
+Andheri East,IN,Maharashtra,Mumbai,Andheri East,K East,400069,19.1136,72.8697
+Golf Course Road,IN,Haryana,Gurugram,Golf Course Road,Gurugram,122002,28.4494,77.1003
+Noida Sector 150,IN,Uttar Pradesh,Noida,Sector 150,Gautam Buddh Nagar,201310,28.5591,77.3384
+Kondapur,IN,Telangana,Hyderabad,Kondapur,Serilingampally,500084,17.4716,78.3609
+Kokapet,IN,Telangana,Hyderabad,Kokapet,Gandipet,500075,17.3950,78.3370
+Guindy,IN,Tamil Nadu,Chennai,Guindy,Guindy,600032,13.0067,80.2206
+Sholinganallur,IN,Tamil Nadu,Chennai,Sholinganallur,Sholinganallur,600119,12.8984,80.2279
+Baner,IN,Maharashtra,Pune,Baner,Pune City,411045,18.5590,73.7868
+Wakad,IN,Maharashtra,Pune,Wakad,Pimpri-Chinchwad,411057,18.5975,73.7637
+Salt Lake Sector V,IN,West Bengal,Kolkata,Salt Lake Sector V,Bidhan Nagar,700091,22.5697,88.4337
+Rajarhat,IN,West Bengal,Kolkata,Rajarhat,New Town,700135,22.6200,88.4500
+SG Highway,IN,Gujarat,Ahmedabad,SG Highway,North West,380054,23.0482,72.5169
+Prahlad Nagar,IN,Gujarat,Ahmedabad,Prahlad Nagar,South West,380015,23.0126,72.5107
+Edappally,IN,Kerala,Kochi,Edappally,Ernakulam,682024,10.0261,76.3083
+Worli,IN,Maharashtra,Mumbai,Worli,G South,400018,19.0176,72.8174
+Chembur,IN,Maharashtra,Mumbai,Chembur,M Ward,400071,19.0522,72.9005
+Sohna Road,IN,Haryana,Gurugram,Sohna Road,Gurugram,122018,28.4089,77.0405
+Dwarka Expressway,IN,Haryana,Gurugram,Dwarka Expressway,Gurugram,122017,28.4967,76.9977
+Noida Sector 137,IN,Uttar Pradesh,Noida,Sector 137,Gautam Buddh Nagar,201305,28.5104,77.4050
+Noida Sector 142,IN,Uttar Pradesh,Noida,Sector 142,Gautam Buddh Nagar,201305,28.5226,77.4126
+Madhapur,IN,Telangana,Hyderabad,Madhapur,Serilingampally,500081,17.4483,78.3915
+Nanakramguda,IN,Telangana,Hyderabad,Nanakramguda,Serilingampally,500032,17.4127,78.3446
+Siruseri,IN,Tamil Nadu,Chennai,Siruseri,Chengalpattu,603103,12.8230,80.2276
+Porur,IN,Tamil Nadu,Chennai,Porur,Porur,600116,13.0384,80.1565
+Magarpatta,IN,Maharashtra,Pune,Magarpatta,Haveli,411013,18.5159,73.9317
+Balewadi,IN,Maharashtra,Pune,Balewadi,Pune City,411045,18.5708,73.7791
+EM Bypass,IN,West Bengal,Kolkata,EM Bypass,Kasba,700107,22.5140,88.4010
+Topsia,IN,West Bengal,Kolkata,Topsia,Kolkata,700046,22.5413,88.3929
+Thaltej,IN,Gujarat,Ahmedabad,Thaltej,North West,380059,23.0524,72.5167
+Science City,IN,Gujarat,Ahmedabad,Science City,North West,380060,23.0725,72.4935
+Marine Drive,IN,Kerala,Kochi,Marine Drive,Ernakulam,682031,9.9816,76.2800
+Aerocity,IN,Delhi,Delhi,Aerocity,South West Delhi,110037,28.5519,77.1218
+Okhla Phase 1,IN,Delhi,Delhi,Okhla Phase 1,South East Delhi,110020,28.5308,77.2721
+Netaji Subhash Place,IN,Delhi,Delhi,Netaji Subhash Place,North West Delhi,110034,28.6980,77.1525

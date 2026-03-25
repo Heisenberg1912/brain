@@ -1,0 +1,72 @@
+location_name,dataset_version,terrain_class,terrain_slope_pct,flood_risk_score,heat_risk_score,climate_risk_score,road_proximity_km,transit_proximity_km,source,tags
+Whitefield Main,seed_v1,gentle,3.2,42,51,48,0.6,1.1,bbmp_gis,climate|gis
+ITPL Area,seed_v1,flat,2.1,38,53,46,0.4,0.8,bbmp_gis,climate|gis
+Brookefield,seed_v1,gentle,3.8,36,49,43,0.5,1.2,bbmp_gis,climate|gis
+Kundalahalli,seed_v1,gentle,4.4,41,52,47,0.5,1.0,bbmp_gis,climate|gis
+Kadugodi,seed_v1,undulating,6.5,45,54,50,0.7,1.6,bbmp_gis,climate|gis
+Varthur,seed_v1,undulating,7.1,58,57,61,1.0,2.1,bbmp_gis,climate|gis
+Marathahalli,seed_v1,flat,2.8,44,56,50,0.3,1.4,bbmp_gis,climate|gis
+Bellandur,seed_v1,flat,1.8,67,59,68,0.4,1.6,bbmp_gis,climate|gis
+Sarjapur Road,seed_v1,gentle,4.2,49,56,53,0.6,1.9,bbmp_gis,climate|gis
+HSR Layout,seed_v1,flat,1.9,34,49,39,0.4,1.5,bbmp_gis,climate|gis
+Koramangala,seed_v1,flat,1.5,29,47,35,0.3,1.3,bbmp_gis,climate|gis
+Electronic City,seed_v1,undulating,5.7,39,58,49,0.8,2.5,bbmp_gis,climate|gis
+Hebbal,seed_v1,flat,2.2,33,48,38,0.3,1.0,bbmp_gis,climate|gis
+Yelahanka,seed_v1,gentle,4.6,31,46,36,0.6,1.4,bbmp_gis,climate|gis
+Devanahalli,seed_v1,gentle,5.4,28,51,34,1.2,3.1,bbmp_gis,climate|gis
+Indiranagar,seed_v1,flat,1.3,24,45,30,0.2,0.9,bbmp_gis,climate|gis
+Jayanagar,seed_v1,flat,1.6,26,44,31,0.3,1.2,bbmp_gis,climate|gis
+Rajajinagar,seed_v1,flat,1.7,27,46,32,0.4,1.1,bbmp_gis,climate|gis
+KR Puram,seed_v1,gentle,4.8,47,54,52,0.5,1.3,bbmp_gis,climate|gis
+Hennur,seed_v1,gentle,4.1,32,50,37,0.7,1.8,bbmp_gis,climate|gis
+Bandra Kurla Complex,seed_v1,flat,1.2,52,58,54,0.2,0.6,city_gis,climate|gis
+Powai,seed_v1,gentle,3.1,40,55,46,0.4,1.1,city_gis,climate|gis
+Gurugram Cyber City,seed_v1,flat,1.8,30,61,42,0.3,0.7,city_gis,climate|gis
+Noida Sector 62,seed_v1,flat,1.6,35,60,44,0.3,0.9,city_gis,climate|gis
+HITEC City,seed_v1,flat,1.9,28,63,41,0.3,0.8,city_gis,climate|gis
+Gachibowli,seed_v1,gentle,3.0,32,62,43,0.4,1.0,city_gis,climate|gis
+OMR Perungudi,seed_v1,flat,1.4,55,59,58,0.4,1.3,city_gis,climate|gis
+Hinjawadi,seed_v1,gentle,4.0,29,54,38,0.5,1.8,city_gis,climate|gis
+Kharadi,seed_v1,flat,2.2,41,55,46,0.4,1.4,city_gis,climate|gis
+New Town,seed_v1,flat,1.5,48,56,51,0.5,1.2,city_gis,climate|gis
+GIFT City,seed_v1,flat,1.7,22,60,36,0.4,1.6,city_gis,climate|gis
+Kakkanad,seed_v1,gentle,3.6,49,52,50,0.5,1.7,city_gis,climate|gis
+Patia,seed_v1,flat,2.4,36,57,43,0.4,1.5,city_gis,climate|gis
+IT Park Chandigarh,seed_v1,flat,1.3,18,47,28,0.3,1.4,city_gis,climate|gis
+GS Road,seed_v1,gentle,3.2,58,50,56,0.4,1.2,city_gis,climate|gis
+Gomti Nagar,seed_v1,flat,1.7,33,58,41,0.4,1.1,city_gis,climate|gis
+Lower Parel,seed_v1,flat,1.1,46,58,48,0.2,0.5,city_gis,climate|gis
+Andheri East,seed_v1,flat,1.5,42,59,46,0.3,0.8,city_gis,climate|gis
+Golf Course Road,seed_v1,flat,1.6,29,60,40,0.3,0.8,city_gis,climate|gis
+Noida Sector 150,seed_v1,gentle,2.8,31,58,39,0.5,1.5,city_gis,climate|gis
+Kondapur,seed_v1,flat,2.0,27,62,40,0.3,0.9,city_gis,climate|gis
+Kokapet,seed_v1,gentle,3.4,26,61,39,0.4,1.4,city_gis,climate|gis
+Guindy,seed_v1,flat,1.3,50,57,52,0.3,0.7,city_gis,climate|gis
+Sholinganallur,seed_v1,flat,1.6,57,58,58,0.4,1.4,city_gis,climate|gis
+Baner,seed_v1,gentle,3.1,24,54,35,0.4,1.4,city_gis,climate|gis
+Wakad,seed_v1,gentle,3.4,25,53,36,0.4,1.6,city_gis,climate|gis
+Salt Lake Sector V,seed_v1,flat,1.4,44,55,48,0.4,0.9,city_gis,climate|gis
+Rajarhat,seed_v1,flat,1.8,46,56,49,0.5,1.3,city_gis,climate|gis
+SG Highway,seed_v1,flat,1.7,19,59,34,0.3,1.2,city_gis,climate|gis
+Prahlad Nagar,seed_v1,flat,1.9,21,58,35,0.3,1.1,city_gis,climate|gis
+Edappally,seed_v1,flat,1.6,41,51,43,0.3,0.9,city_gis,climate|gis
+Worli,seed_v1,flat,1.0,48,57,49,0.2,0.5,city_gis,climate|gis
+Chembur,seed_v1,flat,1.6,44,58,47,0.3,0.9,city_gis,climate|gis
+Sohna Road,seed_v1,flat,1.9,28,61,40,0.3,0.9,city_gis,climate|gis
+Dwarka Expressway,seed_v1,flat,1.8,27,60,39,0.4,1.1,city_gis,climate|gis
+Noida Sector 137,seed_v1,flat,1.9,33,59,42,0.4,1.0,city_gis,climate|gis
+Noida Sector 142,seed_v1,flat,1.8,32,59,41,0.4,0.9,city_gis,climate|gis
+Madhapur,seed_v1,flat,1.8,29,62,40,0.3,0.8,city_gis,climate|gis
+Nanakramguda,seed_v1,gentle,3.1,26,61,39,0.4,1.1,city_gis,climate|gis
+Siruseri,seed_v1,flat,1.7,56,58,57,0.4,1.4,city_gis,climate|gis
+Porur,seed_v1,flat,1.5,53,57,54,0.3,1.0,city_gis,climate|gis
+Magarpatta,seed_v1,flat,2.1,26,54,36,0.4,1.1,city_gis,climate|gis
+Balewadi,seed_v1,gentle,3.0,24,53,35,0.4,1.4,city_gis,climate|gis
+EM Bypass,seed_v1,flat,1.6,47,55,50,0.4,0.9,city_gis,climate|gis
+Topsia,seed_v1,flat,1.5,49,55,51,0.3,0.8,city_gis,climate|gis
+Thaltej,seed_v1,flat,1.8,20,58,35,0.3,1.0,city_gis,climate|gis
+Science City,seed_v1,flat,2.0,18,57,34,0.4,1.3,city_gis,climate|gis
+Marine Drive,seed_v1,flat,1.1,46,52,47,0.2,0.7,city_gis,climate|gis
+Aerocity,seed_v1,flat,1.4,31,60,42,0.3,0.6,city_gis,climate|gis
+Okhla Phase 1,seed_v1,flat,1.5,35,61,44,0.3,0.7,city_gis,climate|gis
+Netaji Subhash Place,seed_v1,flat,1.6,30,59,41,0.3,0.8,city_gis,climate|gis

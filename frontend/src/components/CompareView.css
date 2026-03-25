@@ -1,0 +1,188 @@
+.compare-scroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.compare-ai-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.compare-ai-error {
+  color: var(--red);
+}
+
+.compare-ai-shell {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 14px;
+}
+
+.compare-ai-summary {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.compare-ai-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.compare-ai-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.compare-ai-card.tone-strong {
+  border-color: rgba(0, 210, 160, 0.35);
+}
+
+.compare-ai-card.tone-watch {
+  border-color: rgba(255, 179, 71, 0.35);
+}
+
+.compare-ai-card.tone-risk {
+  border-color: rgba(255, 107, 107, 0.35);
+}
+
+.compare-ai-label {
+  color: var(--text-dim);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.compare-ai-value {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.compare-ai-questions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.compare-ai-question {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.compare-chart-shell {
+  position: relative;
+  width: 100%;
+  height: 240px;
+}
+
+.compare-chart-shell canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.compare-group {
+  padding-bottom: 8px;
+}
+
+.compare-group:last-child {
+  padding-bottom: 0;
+}
+
+.compare-score-row {
+  display: grid;
+  grid-template-columns: minmax(0, 96px) 52px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.cs-label {
+  color: var(--text-dim);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-location {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.cs-metric {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cs-bar {
+  min-width: 0;
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cs-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s ease-out;
+}
+
+.cs-val {
+  text-align: right;
+  font-weight: 700;
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+@media (max-width: 760px) {
+  .compare-ai-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .compare-chart-shell {
+    height: 220px;
+  }
+
+  .compare-score-row {
+    grid-template-columns: minmax(0, 1fr) 46px;
+    grid-template-areas:
+      "location value"
+      "metric metric"
+      "bar bar";
+    gap: 4px 10px;
+  }
+
+  .cs-location {
+    grid-area: location;
+  }
+
+  .cs-metric {
+    grid-area: metric;
+  }
+
+  .cs-bar {
+    grid-area: bar;
+  }
+
+  .cs-val {
+    grid-area: value;
+  }
+}

@@ -1,0 +1,72 @@
+location_name,zoning_type,fsi,ground_coverage_pct,max_height_m,setback_front_m,setback_side_m
+Whitefield Main,mixed,2.50,50.00,30.00,6.00,3.00
+ITPL Area,commercial,3.00,55.00,45.00,9.00,4.50
+Brookefield,residential,2.25,50.00,24.00,4.50,3.00
+Kundalahalli,residential,2.25,50.00,24.00,4.50,3.00
+Kadugodi,residential,1.75,45.00,18.00,4.50,3.00
+Varthur,residential,1.75,45.00,18.00,4.50,3.00
+Marathahalli,mixed,2.50,50.00,30.00,6.00,3.00
+Bellandur,mixed,2.50,50.00,30.00,6.00,3.00
+Sarjapur Road,residential,2.25,50.00,24.00,4.50,3.00
+HSR Layout,residential,2.25,50.00,24.00,4.50,3.00
+Koramangala,mixed,2.75,55.00,36.00,6.00,3.00
+Electronic City,industrial,3.25,60.00,45.00,9.00,6.00
+Hebbal,mixed,2.50,50.00,30.00,6.00,3.00
+Yelahanka,residential,1.75,45.00,18.00,4.50,3.00
+Devanahalli,residential,1.50,40.00,15.00,4.50,3.00
+Indiranagar,mixed,2.75,55.00,36.00,6.00,3.00
+Jayanagar,residential,2.50,50.00,30.00,4.50,3.00
+Rajajinagar,mixed,2.50,50.00,30.00,6.00,3.00
+KR Puram,mixed,2.25,50.00,24.00,6.00,3.00
+Hennur,residential,2.00,45.00,21.00,4.50,3.00
+Bandra Kurla Complex,commercial,3.50,60.00,60.00,9.00,4.50
+Powai,mixed,2.75,50.00,36.00,6.00,3.00
+Gurugram Cyber City,commercial,3.75,60.00,60.00,9.00,4.50
+Noida Sector 62,mixed,3.00,55.00,45.00,6.00,3.00
+HITEC City,commercial,3.50,55.00,54.00,9.00,4.50
+Gachibowli,mixed,3.00,55.00,45.00,6.00,3.00
+OMR Perungudi,mixed,2.75,50.00,36.00,6.00,3.00
+Hinjawadi,industrial,3.25,60.00,48.00,9.00,6.00
+Kharadi,mixed,3.00,55.00,45.00,6.00,3.00
+New Town,mixed,2.75,55.00,42.00,6.00,3.00
+GIFT City,commercial,4.00,60.00,75.00,9.00,4.50
+Kakkanad,mixed,2.50,50.00,33.00,6.00,3.00
+Patia,mixed,2.50,50.00,30.00,6.00,3.00
+IT Park Chandigarh,mixed,3.00,50.00,36.00,6.00,3.00
+GS Road,commercial,3.00,55.00,45.00,6.00,3.00
+Gomti Nagar,residential,2.50,50.00,30.00,4.50,3.00
+Lower Parel,commercial,3.75,60.00,72.00,9.00,4.50
+Andheri East,mixed,3.25,55.00,54.00,6.00,3.00
+Golf Course Road,commercial,3.50,60.00,60.00,9.00,4.50
+Noida Sector 150,residential,2.75,50.00,36.00,4.50,3.00
+Kondapur,mixed,3.25,55.00,48.00,6.00,3.00
+Kokapet,mixed,3.25,55.00,48.00,6.00,3.00
+Guindy,mixed,3.00,55.00,45.00,6.00,3.00
+Sholinganallur,mixed,2.75,50.00,36.00,6.00,3.00
+Baner,mixed,3.00,55.00,42.00,6.00,3.00
+Wakad,mixed,2.75,50.00,36.00,6.00,3.00
+Salt Lake Sector V,commercial,3.00,55.00,45.00,6.00,3.00
+Rajarhat,mixed,2.75,50.00,36.00,6.00,3.00
+SG Highway,commercial,3.25,55.00,48.00,6.00,3.00
+Prahlad Nagar,mixed,3.00,55.00,42.00,6.00,3.00
+Edappally,mixed,2.75,50.00,36.00,6.00,3.00
+Worli,commercial,3.75,60.00,72.00,9.00,4.50
+Chembur,mixed,3.25,55.00,48.00,6.00,3.00
+Sohna Road,mixed,3.25,55.00,48.00,6.00,3.00
+Dwarka Expressway,residential,3.00,50.00,42.00,4.50,3.00
+Noida Sector 137,residential,2.75,50.00,36.00,4.50,3.00
+Noida Sector 142,mixed,3.00,55.00,42.00,6.00,3.00
+Madhapur,commercial,3.25,55.00,48.00,6.00,3.00
+Nanakramguda,commercial,3.50,55.00,54.00,9.00,4.50
+Siruseri,mixed,2.75,50.00,36.00,6.00,3.00
+Porur,mixed,2.75,50.00,36.00,6.00,3.00
+Magarpatta,mixed,3.00,55.00,45.00,6.00,3.00
+Balewadi,mixed,2.75,50.00,39.00,6.00,3.00
+EM Bypass,mixed,2.75,50.00,39.00,6.00,3.00
+Topsia,commercial,2.75,55.00,42.00,6.00,3.00
+Thaltej,mixed,3.00,55.00,42.00,6.00,3.00
+Science City,residential,2.75,50.00,36.00,4.50,3.00
+Marine Drive,mixed,3.00,55.00,42.00,6.00,3.00
+Aerocity,commercial,3.75,60.00,60.00,9.00,4.50
+Okhla Phase 1,industrial,3.25,60.00,48.00,9.00,4.50
+Netaji Subhash Place,commercial,3.25,55.00,48.00,6.00,3.00
