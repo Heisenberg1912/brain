@@ -366,6 +366,10 @@ def get_llm_profile() -> dict[str, Any]:
     return llm_layer.get_llm_profile()
 
 
+def get_brain_use_cases() -> dict[str, Any]:
+    return brain_layer.get_brain_use_cases()
+
+
 def get_brain_architecture() -> dict[str, Any]:
     return brain_layer.get_brain_architecture()
 

@@ -1074,6 +1074,22 @@ class AIBrainArchitectureOut(BaseModel):
     interfaces: list[AIBrainInterfaceOut] = Field(default_factory=list)
 
 
+class AIBrainUseCaseOut(BaseModel):
+    key: str
+    title: str
+    goal: str
+    audience: str
+    inputs: list[str] = Field(default_factory=list)
+    outputs: list[str] = Field(default_factory=list)
+    systems: list[str] = Field(default_factory=list)
+    endpoints: list[str] = Field(default_factory=list)
+
+
+class AIBrainUseCasesOut(BaseModel):
+    objective: str
+    use_cases: list[AIBrainUseCaseOut] = Field(default_factory=list)
+
+
 class AILLMProviderOut(BaseModel):
     key: str
     label: str

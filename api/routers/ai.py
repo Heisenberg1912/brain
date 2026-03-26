@@ -9,6 +9,7 @@ from api.schemas import (
     AIBrainArchitectureOut,
     AIBrainModuleProfileOut,
     AIBrainResponse,
+    AIBrainUseCasesOut,
     AILLMProfileOut,
     AICompareRequest,
     AICompareResponse,
@@ -34,6 +35,11 @@ def llm_profile():
 @router.get("/brain/modules", response_model=list[AIBrainModuleProfileOut])
 def brain_modules():
     return ai_svc.list_brain_modules()
+
+
+@router.get("/brain/use-cases", response_model=AIBrainUseCasesOut)
+def brain_use_cases():
+    return ai_svc.get_brain_use_cases()
 
 
 @router.get("/brain/architecture", response_model=AIBrainArchitectureOut)

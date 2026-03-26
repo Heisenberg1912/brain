@@ -31,6 +31,15 @@ def test_get_brain_approach_returns_cross_system_overview():
     assert any(item["key"] == "compare_locations" for item in payload["interfaces"])
 
 
+def test_get_brain_use_cases_returns_product_registry():
+    payload = brain_layer.get_brain_use_cases()
+
+    assert payload["objective"] == "Make the intelligence interface explicit about what it is for."
+    assert payload["use_cases"][0]["key"] == "market_scan"
+    assert any(item["key"] == "location_underwrite" for item in payload["use_cases"])
+    assert any("/api/v1/ai/query" in item["endpoints"] for item in payload["use_cases"])
+
+
 def test_get_brain_architecture_returns_layered_blueprint():
     payload = brain_layer.get_brain_architecture()
 

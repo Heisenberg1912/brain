@@ -574,6 +574,42 @@ class TestAIValidation:
         assert body[0]["source_system"] == "valuation"
         assert body[1]["depends_on"] == ["valuation"]
 
+    def test_brain_use_cases_route_returns_registry(self):
+        payload = {
+            "objective": "Make the intelligence interface explicit about what it is for.",
+            "use_cases": [
+                {
+                    "key": "market_scan",
+                    "title": "Market Scan",
+                    "goal": "Surface the strongest markets and forward-looking opportunities across the active geography.",
+                    "audience": "Investors, strategy, acquisitions",
+                    "inputs": ["national rankings"],
+                    "outputs": ["market pulse"],
+                    "systems": ["valuation"],
+                    "endpoints": ["/api/v1/ai/market-brief"],
+                },
+                {
+                    "key": "conversational_query",
+                    "title": "Conversational Query",
+                    "goal": "Let users ask natural-language questions while keeping structured system context as the source of truth.",
+                    "audience": "Anyone using the intelligence interface",
+                    "inputs": ["question"],
+                    "outputs": ["answer"],
+                    "systems": ["data_bank", "valuation", "blockchain"],
+                    "endpoints": ["/api/v1/ai/query"],
+                },
+            ],
+        }
+
+        with patch("api.routers.ai.ai_svc.get_brain_use_cases", return_value=payload):
+            r = client.get("/api/v1/ai/brain/use-cases")
+
+        assert r.status_code == 200
+        body = r.json()
+        assert body["objective"] == "Make the intelligence interface explicit about what it is for."
+        assert body["use_cases"][0]["key"] == "market_scan"
+        assert body["use_cases"][1]["endpoints"] == ["/api/v1/ai/query"]
+
     def test_brain_architecture_route_returns_overview(self):
         payload = {
             "objective": "Keep the AI brain modular, layered, and replaceable as the system grows.",

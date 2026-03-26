@@ -141,6 +141,69 @@ ARCHITECTURE_LAYERS = (
     },
 )
 
+USE_CASE_REGISTRY = (
+    {
+        "key": "market_scan",
+        "title": "Market Scan",
+        "goal": "Surface the strongest markets and forward-looking opportunities across the active geography.",
+        "audience": "Investors, strategy, acquisitions",
+        "inputs": ["national rankings", "future appreciation", "development potential", "market brief context"],
+        "outputs": ["market pulse", "top opportunities", "watchouts", "prompt suggestions"],
+        "systems": ["valuation"],
+        "endpoints": ["/api/v1/ai/market-brief"],
+    },
+    {
+        "key": "location_underwrite",
+        "title": "Location Underwrite",
+        "goal": "Turn a single parcel into a decision-ready thesis with forward pricing, fit, risks, and next actions.",
+        "audience": "Investment, development, architecture",
+        "inputs": ["location_id", "planning context", "valuation scores", "price prediction", "hotspot context"],
+        "outputs": ["brain profile", "core thesis", "recommendations", "module breakdown"],
+        "systems": ["data_bank", "valuation", "blockchain"],
+        "endpoints": ["/api/v1/ai/brain/{location_id}", "/api/v1/valuation/core/{location_id}"],
+    },
+    {
+        "key": "comparative_analysis",
+        "title": "Comparative Analysis",
+        "goal": "Compare two or three locations and explain which option wins on balance.",
+        "audience": "Investment committee, site selection, strategy",
+        "inputs": ["location_ids", "valuation scores", "forward outlook", "risk tradeoffs"],
+        "outputs": ["winner", "verdict cards", "comparison summary", "follow-up questions"],
+        "systems": ["valuation"],
+        "endpoints": ["/api/v1/ai/compare", "/api/v1/compare"],
+    },
+    {
+        "key": "planning_feasibility",
+        "title": "Planning Feasibility",
+        "goal": "Explain whether a site is planning-ready by grounding floor-plan constraints, zoning rules, and location intelligence in one interface.",
+        "audience": "Architecture, planning, design ops",
+        "inputs": ["planning context", "masterplan", "regional standards", "massing inputs"],
+        "outputs": ["context module", "planning-readiness view", "constraints and validation data"],
+        "systems": ["data_bank"],
+        "endpoints": ["/api/v1/ai/brain/{location_id}", "/api/v1/data/planning-contexts/{location_id}"],
+    },
+    {
+        "key": "asset_readiness",
+        "title": "Asset Readiness",
+        "goal": "Show whether plans and tokenized property assets are ready for transfer, licensing, or exchange.",
+        "audience": "Product ops, transactions, platform ops",
+        "inputs": ["location_id", "plan registry", "tokenized property records"],
+        "outputs": ["ownership module", "readiness summary", "asset counts and chain coverage"],
+        "systems": ["blockchain"],
+        "endpoints": ["/api/v1/ai/brain/{location_id}", "/api/v1/chain/plans", "/api/v1/chain/properties"],
+    },
+    {
+        "key": "conversational_query",
+        "title": "Conversational Query",
+        "goal": "Let users ask natural-language questions while keeping structured system context as the source of truth.",
+        "audience": "Anyone using the intelligence interface",
+        "inputs": ["question", "optional location_id", "optional compare_ids", "tool context"],
+        "outputs": ["answer", "context label"],
+        "systems": ["data_bank", "valuation", "blockchain"],
+        "endpoints": ["/api/v1/ai/query", "/api/v1/ai/analyze/{location_id}"],
+    },
+)
+
 INTERFACE_REGISTRY = (
     {
         "key": "llm_profile",
@@ -155,6 +218,13 @@ INTERFACE_REGISTRY = (
         "method": "GET",
         "scope": "system",
         "description": "Layered blueprint for how the intelligence interface is composed across subsystems.",
+    },
+    {
+        "key": "brain_use_cases",
+        "path": "/api/v1/ai/brain/use-cases",
+        "method": "GET",
+        "scope": "system",
+        "description": "Product-facing use-case registry for the intelligence interface.",
     },
     {
         "key": "brain_approach",
@@ -246,6 +316,13 @@ def _location_name(location) -> str:
 
 def list_module_profiles() -> list[dict[str, Any]]:
     return [dict(module) for module in MODULE_REGISTRY]
+
+
+def get_brain_use_cases() -> dict[str, Any]:
+    return {
+        "objective": "Make the intelligence interface explicit about what it is for.",
+        "use_cases": [dict(item) for item in USE_CASE_REGISTRY],
+    }
 
 
 def get_brain_architecture() -> dict[str, Any]:
