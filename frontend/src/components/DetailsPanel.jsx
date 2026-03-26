@@ -1,12 +1,48 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
-  BarController,
-  BarElement,
+  AlertTriangle,
+  BarChart3,
+  Building2,
+  ChevronDown,
+  CloudSun,
+  Database,
+  Gauge,
+  MapPin,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
+  Users,
+  Zap,
+} from 'lucide-react'
+import {
+  analyzeAI,
+  fetchIntelligence,
+  fetchLocationDetail,
+  fetchPlanningContext,
+  fetchPrediction,
+  fetchScore,
+  fetchValuationCore,
+  fetchValuationLogic,
+} from '../api'
+import {
+  compactText,
+  formatCurrency,
+  formatDistance,
+  formatLabel,
+  formatMarkdown,
+  formatNumber,
+  formatPercent,
+  locationLabel,
+  locationSecondaryLabel,
+  scoreColor,
+} from '../utils'
+import './DetailsPanel.css'
+
+import {
   CategoryScale,
   Chart as ChartJS,
   Filler,
   Legend,
-  LineController,
   LineElement,
   LinearScale,
   PointElement,
@@ -14,10 +50,7 @@ import {
   RadialLinearScale,
   Tooltip,
 } from 'chart.js'
-import { Bar, Line, Radar } from 'react-chartjs-2'
-import { analyzeAI, fetchLocationDetail, fetchScore } from '../api'
-import { formatMarkdown, scoreClass, SCORE_WEIGHTS } from '../utils'
-import './DetailsPanel.css'
+import { Line, Radar } from 'react-chartjs-2'
 
 ChartJS.register(
   RadarController,
@@ -27,96 +60,151 @@ ChartJS.register(
   Filler,
   CategoryScale,
   LinearScale,
-  LineController,
-  BarController,
-  BarElement,
   Tooltip,
   Legend,
 )
 
-const RADAR_LABELS = [
-  'Land Value',
-  'Dev Potential',
-  'Future Appr.',
-  'Infra',
-  'Price Trend',
-  'Zoning',
-  'Density',
-]
-
-const DISTRIBUTION_BINS = Array.from({ length: 10 }, (_, index) => index * 10)
-
-function toNumber(value) {
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : 0
+function getFulfilledValue(result) {
+  return result?.status === 'fulfilled' ? result.value : null
 }
 
-function ordinalize(value) {
-  const absolute = Math.abs(Math.round(value))
-  const lastTwo = absolute % 100
-
-  if (lastTwo >= 11 && lastTwo <= 13) {
-    return `${absolute}th`
-  }
-
-  switch (absolute % 10) {
-    case 1:
-      return `${absolute}st`
-    case 2:
-      return `${absolute}nd`
-    case 3:
-      return `${absolute}rd`
-    default:
-      return `${absolute}th`
-  }
+function ScoreTile({ label, value, tone }) {
+  return (
+    <div className="score-tile">
+      <span className="score-tile-label">{label}</span>
+      <strong className={`score-tile-value ${tone}`}>{value}</strong>
+    </div>
+  )
 }
 
-export default function DetailsPanel({ activeId, rankings, isActive }) {
-  const [data, setData] = useState(null)
-  const [scores, setScores] = useState(null)
+function SignalList({ title, items, tone = 'neutral', isOpen, onToggle }) {
+  if (!items?.length) return null
+
+  return (
+    <article className={`signal-list collapsible ${tone} ${isOpen ? 'is-open' : ''}`}>
+      <button
+        type="button"
+        className="accordion-toggle"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+      >
+        <div className="accordion-copy">
+          <div className="accordion-title-row">
+            <h4>{title}</h4>
+            <span className="accordion-count">{items.length}</span>
+          </div>
+          <p className="accordion-preview">{compactText(items[0], '', 82)}</p>
+        </div>
+        <ChevronDown size={16} className="accordion-icon" />
+      </button>
+
+      {isOpen ? (
+        <div className="accordion-body">
+          <ul>
+            {items.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </article>
+  )
+}
+
+export default function DetailsPanel({ activeId, locations, rankings, hotspots }) {
+  const [payload, setPayload] = useState({
+    detail: null,
+    score: null,
+    intelligence: null,
+    core: null,
+    logic: null,
+    prediction: null,
+    planningContext: null,
+  })
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [analysis, setAnalysis] = useState(null)
-  const [analyzing, setAnalyzing] = useState(false)
-  const radarChartRef = useRef(null)
-  const priceChartRef = useRef(null)
-  const distChartRef = useRef(null)
+  const [analysisError, setAnalysisError] = useState('')
+  const [analysisLoading, setAnalysisLoading] = useState(false)
+  const [expandedPanels, setExpandedPanels] = useState({
+    strengths: true,
+    risks: false,
+    opportunities: false,
+    ai: true,
+  })
 
   useEffect(() => {
-    let cancelled = false
-
     if (!activeId) {
-      setData(null)
-      setScores(null)
+      setPayload({
+        detail: null,
+        score: null,
+        intelligence: null,
+        core: null,
+        logic: null,
+        prediction: null,
+        planningContext: null,
+      })
       setLoadError('')
-      setLoading(false)
       setAnalysis(null)
-      return () => {
-        cancelled = true
-      }
+      setAnalysisError('')
+      setAnalysisLoading(false)
+      setExpandedPanels({
+        strengths: true,
+        risks: false,
+        opportunities: false,
+        ai: true,
+      })
+      return
     }
 
+    let cancelled = false
     setLoading(true)
     setLoadError('')
-    setData(null)
-    setScores(null)
     setAnalysis(null)
+    setAnalysisError('')
+    setExpandedPanels({
+      strengths: true,
+      risks: false,
+      opportunities: false,
+      ai: true,
+    })
 
-    Promise.all([fetchLocationDetail(activeId), fetchScore(activeId)])
-      .then(([detail, score]) => {
+    Promise.allSettled([
+      fetchLocationDetail(activeId),
+      fetchScore(activeId),
+      fetchIntelligence(activeId),
+      fetchValuationCore(activeId),
+      fetchValuationLogic(activeId),
+      fetchPrediction(activeId),
+      fetchPlanningContext(activeId),
+    ])
+      .then((results) => {
         if (cancelled) return
-        setData(detail)
-        setScores(score)
+
+        const detail = getFulfilledValue(results[0])
+        const score = getFulfilledValue(results[1])
+
+        if (!detail || !score) {
+          setLoadError('Core location intelligence could not be loaded for this market.')
+          return
+        }
+
+        setPayload({
+          detail,
+          score,
+          intelligence: getFulfilledValue(results[2]),
+          core: getFulfilledValue(results[3]),
+          logic: getFulfilledValue(results[4]),
+          prediction: getFulfilledValue(results[5]),
+          planningContext: getFulfilledValue(results[6]),
+        })
       })
       .catch((error) => {
         console.error(error)
-        if (cancelled) return
-        setLoadError('Location intelligence could not be loaded right now.')
+        if (!cancelled) setLoadError('Core location intelligence could not be loaded for this market.')
       })
       .finally(() => {
-        if (!cancelled) {
-          setLoading(false)
-        }
+        if (!cancelled) setLoading(false)
       })
 
     return () => {
@@ -124,471 +212,518 @@ export default function DetailsPanel({ activeId, rankings, isActive }) {
     }
   }, [activeId])
 
-  const sortedPrices = useMemo(() => (
-    [...(data?.price_history ?? [])]
-      .filter((pricePoint) => Number.isFinite(Number(pricePoint.price_per_sqft)))
-      .sort((first, second) => first.recorded_date.localeCompare(second.recorded_date))
-  ), [data])
-
-  const scoreValues = useMemo(() => {
-    if (!scores) return null
-
-    const components = scores.components ?? {}
-
-    return [
-      toNumber(scores.land_value_score),
-      toNumber(scores.development_potential_score),
-      toNumber(scores.future_appreciation_index),
-      toNumber(components.infra_score),
-      toNumber(components.price_trend_score),
-      toNumber(components.zoning_favorability),
-      toNumber(components.density_score),
-    ]
-  }, [scores])
+  const selectedLocation = activeId ? locations[activeId] : null
+  const overviewLeaders = rankings.slice(0, 4)
+  const overviewHotspots = hotspots.slice(0, 3)
 
   const radarData = useMemo(() => {
-    if (!scoreValues) return null
+    const score = payload.score
+    if (!score) return null
 
     return {
-      labels: RADAR_LABELS,
-      datasets: [{
-        data: scoreValues,
-        backgroundColor: 'rgba(108, 92, 231, 0.14)',
-        borderColor: '#6c5ce7',
-        borderWidth: 2,
-        pointBackgroundColor: '#6c5ce7',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 1,
-        pointRadius: 3,
-        pointHoverRadius: 4,
-      }],
+      labels: ['Land Value', 'Dev Potential', 'Future App.', 'Infra', 'Price Trend', 'Density'],
+      datasets: [
+        {
+          label: score.location,
+          data: [
+            score.land_value_score,
+            score.development_potential_score,
+            score.future_appreciation_index,
+            score.components?.infra_score || 0,
+            score.components?.price_trend_score || 0,
+            score.components?.density_score || 0,
+          ],
+          backgroundColor: 'rgba(23, 184, 151, 0.16)',
+          borderColor: '#17b897',
+          pointBackgroundColor: '#17b897',
+          borderWidth: 2,
+        },
+      ],
     }
-  }, [scoreValues])
+  }, [payload.score])
 
-  const radarOptions = useMemo(() => ({
+  const radarOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    resizeDelay: 120,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label(context) {
-            return `${context.label}: ${Math.round(toNumber(context.parsed.r))}`
-          },
-        },
-      },
-    },
     scales: {
       r: {
         beginAtZero: true,
         max: 100,
-        ticks: {
-          stepSize: 25,
-          color: '#6f728f',
-          backdropColor: 'transparent',
-          font: { size: 9 },
-        },
-        grid: { color: '#2a2a3a' },
-        angleLines: { color: '#2a2a3a' },
+        grid: { color: 'rgba(148, 163, 184, 0.2)' },
+        angleLines: { color: 'rgba(148, 163, 184, 0.16)' },
         pointLabels: {
-          color: '#9b9fbc',
-          font: { size: 10, weight: '600' },
+          color: '#94a3b8',
+          font: { family: 'Montserrat', size: 11, weight: '600' },
         },
+        ticks: { display: false },
       },
-    },
-  }), [])
-
-  const priceChartData = useMemo(() => {
-    if (sortedPrices.length < 2) return null
-
-    return {
-      labels: sortedPrices.map((pricePoint) => (
-        new Date(pricePoint.recorded_date).toLocaleDateString('en-US', {
-          month: 'short',
-          year: '2-digit',
-        })
-      )),
-      datasets: [{
-        data: sortedPrices.map((pricePoint) => toNumber(pricePoint.price_per_sqft)),
-        borderColor: '#6c5ce7',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.32,
-        pointRadius: 2.5,
-        pointHoverRadius: 4,
-        pointBackgroundColor: '#6c5ce7',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 1,
-        backgroundColor(context) {
-          const { chart } = context
-          const { ctx, chartArea } = chart
-
-          if (!chartArea) {
-            return 'rgba(108, 92, 231, 0.18)'
-          }
-
-          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom)
-          gradient.addColorStop(0, 'rgba(108, 92, 231, 0.34)')
-          gradient.addColorStop(1, 'rgba(108, 92, 231, 0.02)')
-          return gradient
-        },
-      }],
-    }
-  }, [sortedPrices])
-
-  const priceChartOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    resizeDelay: 120,
-    interaction: {
-      mode: 'index',
-      intersect: false,
     },
     plugins: {
       legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label(context) {
-            return `Rs ${Math.round(toNumber(context.parsed.y)).toLocaleString()}/sqft`
-          },
+    },
+  }
+
+  const priceTrendData = useMemo(() => {
+    const history = [...(payload.detail?.price_history || [])]
+      .sort((left, right) => new Date(left.recorded_date) - new Date(right.recorded_date))
+
+    if (history.length < 2) return null
+
+    return {
+      labels: history.map((entry) => entry.recorded_date),
+      datasets: [
+        {
+          label: 'Price / sqft',
+          data: history.map((entry) => entry.price_per_sqft),
+          fill: true,
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245, 158, 11, 0.12)',
+          tension: 0.35,
+          pointRadius: 3,
         },
-      },
+      ],
+    }
+  }, [payload.detail])
+
+  const lineOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
     },
     scales: {
       x: {
-        ticks: {
-          color: '#9b9fbc',
-          font: { size: 9 },
-          maxRotation: 0,
-        },
-        grid: { display: false },
+        ticks: { color: '#94a3b8', font: { family: 'Montserrat', size: 10 } },
+        grid: { color: 'rgba(148, 163, 184, 0.08)' },
       },
       y: {
-        ticks: {
-          color: '#9b9fbc',
-          font: { size: 9 },
-          callback(value) {
-            return `Rs ${Math.round(toNumber(value) / 1000)}k`
-          },
-        },
-        grid: { color: '#2a2a3a' },
+        ticks: { color: '#94a3b8', font: { family: 'Montserrat', size: 10 } },
+        grid: { color: 'rgba(148, 163, 184, 0.08)' },
       },
     },
-  }), [])
-
-  const distributionMeta = useMemo(() => {
-    if (!scores || !rankings?.length) return null
-
-    const landValue = toNumber(scores.land_value_score)
-    const values = rankings
-      .map((item) => Number(item.land_value_score))
-      .filter(Number.isFinite)
-      .sort((first, second) => first - second)
-
-    if (values.length === 0) return null
-
-    const counts = DISTRIBUTION_BINS.map((binStart, index) => {
-      const upperBound = binStart + 10
-      return values.filter((value) => (
-        index === DISTRIBUTION_BINS.length - 1
-          ? value >= binStart && value <= 100
-          : value >= binStart && value < upperBound
-      )).length
-    })
-
-    const currentBin = Math.max(
-      0,
-      Math.min(
-        DISTRIBUTION_BINS.length - 1,
-        Math.floor(Math.min(Math.max(landValue, 0), 99.999) / 10),
-      ),
-    )
-    const percentile = Math.round((values.filter((value) => value < landValue).length / values.length) * 100)
-
-    return {
-      percentile,
-      chartData: {
-        labels: DISTRIBUTION_BINS.map((binStart) => `${binStart}-${binStart + 10}`),
-        datasets: [{
-          data: counts,
-          backgroundColor: counts.map((_, index) => (
-            index === currentBin ? '#6c5ce7' : 'rgba(255, 255, 255, 0.08)'
-          )),
-          borderRadius: 999,
-          borderSkipped: false,
-          barPercentage: 0.84,
-          categoryPercentage: 0.96,
-          maxBarThickness: 18,
-        }],
-      },
-    }
-  }, [rankings, scores])
-
-  const distributionOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    resizeDelay: 120,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        displayColors: false,
-        callbacks: {
-          title(items) {
-            return items[0]?.label ? `${items[0].label} score band` : ''
-          },
-          label(context) {
-            const count = Math.round(toNumber(context.parsed.y))
-            return `${count} market ${count === 1 ? 'entry' : 'entries'}`
-          },
-        },
-      },
-    },
-    scales: {
-      x: { display: false },
-      y: { display: false, beginAtZero: true },
-    },
-  }), [])
-
-  useEffect(() => {
-    if (!isActive) return
-
-    const frameId = requestAnimationFrame(() => {
-      radarChartRef.current?.resize()
-      priceChartRef.current?.resize()
-      distChartRef.current?.resize()
-    })
-
-    return () => cancelAnimationFrame(frameId)
-  }, [activeId, isActive, priceChartData, radarData, distributionMeta])
-
-  const handleAnalyze = async () => {
-    if (!activeId) return
-    setAnalyzing(true)
-
-    try {
-      const response = await analyzeAI(activeId)
-      setAnalysis(response)
-    } catch (error) {
-      console.error(error)
-      setAnalysis({
-        analysis: 'Analysis failed. Check the AI service configuration.',
-        cards: [],
-        recommended_questions: [],
-      })
-    } finally {
-      setAnalyzing(false)
-    }
   }
 
   if (!activeId) {
-    return <div className="detail-empty">Select a location from the map or rankings to view detailed intelligence.</div>
+    return (
+      <div className="details-overview">
+        <section className="hero-card">
+          <p className="eyebrow">National command center</p>
+          <h3>Select a market to brief it.</h3>
+          <p>Overview, compare, AI, and registry tools stay live in this panel.</p>
+        </section>
+
+        <section className="overview-grid">
+          <ScoreTile label="Tracked markets" value={formatNumber(rankings.length || Object.keys(locations).length)} />
+          <ScoreTile label="Mapped hotspots" value={formatNumber(hotspots.length)} />
+          <ScoreTile label="Top score leader" value={overviewLeaders[0]?.location || 'N/A'} />
+          <ScoreTile label="Lead cluster" value={overviewHotspots[0] ? formatLabel(overviewHotspots[0].label) : 'N/A'} />
+        </section>
+
+        <section className="details-section">
+          <div className="section-heading">
+            <TrendingUp size={18} />
+            <h4>Top ranked markets</h4>
+          </div>
+          <div className="overview-card-grid">
+            {overviewLeaders.map((market) => (
+              <article key={market.location_id} className="mini-card">
+                <div>
+                  <strong>{market.location}</strong>
+                  <span>{formatLabel(market.zoning_type)} zone</span>
+                </div>
+                <b style={{ color: scoreColor(market.land_value_score) }}>{market.land_value_score.toFixed(0)}</b>
+              </article>
+            ))}
+            {overviewLeaders.length === 0 ? <p className="muted-copy">Rankings are still loading.</p> : null}
+          </div>
+        </section>
+
+        <section className="details-section">
+          <div className="section-heading">
+            <Zap size={18} />
+            <h4>Hotspot corridors</h4>
+          </div>
+          <div className="overview-card-grid">
+            {overviewHotspots.map((hotspot) => (
+              <article key={hotspot.cluster_id} className="mini-card">
+                <div>
+                  <strong>{formatLabel(hotspot.label)}</strong>
+                  <span>{hotspot.cluster_size} locations in cluster</span>
+                </div>
+                <b>{hotspot.hotspot_score.toFixed(0)}</b>
+              </article>
+            ))}
+            {overviewHotspots.length === 0 ? <p className="muted-copy">Hotspot clustering is not available yet.</p> : null}
+          </div>
+        </section>
+
+        <section className="details-section">
+          <div className="section-heading">
+            <Database size={18} />
+            <h4>Visible product surfaces</h4>
+          </div>
+          <div className="surface-grid">
+            <article className="surface-card">
+              <strong>Spatial view</strong>
+              <span>Map, heat, infra</span>
+            </article>
+            <article className="surface-card">
+              <strong>Planning + valuation</strong>
+              <span>Planning, pricing, risk</span>
+            </article>
+            <article className="surface-card">
+              <strong>AI layer</strong>
+              <span>Brief, chat, deep dive</span>
+            </article>
+            <article className="surface-card">
+              <strong>Blockchain layer</strong>
+              <span>Plans, listings, assets</span>
+            </article>
+          </div>
+        </section>
+      </div>
+    )
   }
 
-  if (loading) {
-    return <div className="detail-loading"><span className="spinner" /> Loading location intelligence...</div>
+  if (loading) return <div className="panel-loading"><span className="spinner" /></div>
+  if (loadError) return <div className="panel-error"><AlertTriangle size={22} /><p>{loadError}</p></div>
+
+  const { detail, score, intelligence, core, logic, prediction, planningContext } = payload
+  if (!detail || !score) return null
+
+  const displayedLogic = logic?.logic || core?.logic
+  const selectedName = locationLabel(selectedLocation || detail.location)
+  const locationMeta = locationSecondaryLabel(selectedLocation || detail.location)
+  const nearbyInfrastructure = detail.nearby_infrastructure || []
+
+  function togglePanel(panel) {
+    setExpandedPanels((current) => ({
+      ...current,
+      [panel]: !current[panel],
+    }))
   }
 
-  if (loadError) {
-    return <div className="detail-loading detail-error">{loadError}</div>
+  async function runAnalysis() {
+    if (!activeId || analysisLoading) return
+
+    setAnalysisLoading(true)
+    setAnalysisError('')
+
+    try {
+      const result = await analyzeAI(activeId)
+      setAnalysis(result)
+    } catch (error) {
+      console.error(error)
+      setAnalysisError('AI deep dive is unavailable for this market right now.')
+    } finally {
+      setAnalysisLoading(false)
+    }
   }
-
-  if (!data || !scores) return null
-
-  const loc = data.location
-  const masterplan = data.masterplan
-  const census = data.census
-  const infra = data.nearby_infrastructure || []
-  const landValue = toNumber(scores.land_value_score)
-  const developmentPotential = toNumber(scores.development_potential_score)
-  const futureAppreciation = toNumber(scores.future_appreciation_index)
-
-  const tooltipHtml = (weights) => Object.entries(weights).map(([name, value]) => (
-    `<div class="tw"><span class="wname">${name}</span><span class="wpct">${Math.round(value * 100)}%</span></div>`
-  )).join('')
-
-  const infrastructurePhases = [
-    { items: infra.filter((item) => item.status === 'operational'), label: 'Active', cls: 'phase-operational' },
-    { items: infra.filter((item) => item.status === 'under_construction'), label: 'Building', cls: 'phase-construction' },
-    { items: infra.filter((item) => item.status === 'planned'), label: 'Planned', cls: 'phase-planned' },
-  ]
-
-  const pctChange = sortedPrices.length > 1 && toNumber(sortedPrices[0].price_per_sqft) > 0
-    ? (((toNumber(sortedPrices[sortedPrices.length - 1].price_per_sqft) - toNumber(sortedPrices[0].price_per_sqft)) / toNumber(sortedPrices[0].price_per_sqft)) * 100).toFixed(1)
-    : null
 
   return (
-    <div className="detail-scroll">
-      <div className="detail-section">
-        <h2 className="detail-name">{loc.name}</h2>
-        <div className="detail-subtitle">
-          {[loc.locality, loc.city, loc.state, loc.ward ? `${loc.ward} Ward` : null, loc.pin_code].filter(Boolean).join(' · ')}
-        </div>
-      </div>
-
-      <div className="detail-section">
-        <h3>Valuation Intelligence</h3>
-        <div className="score-bars">
-          {[
-            { label: 'Land Value', value: landValue, weights: SCORE_WEIGHTS.land_value, color: 'var(--accent)', glow: 'rgba(108, 92, 231, 0.42)' },
-            { label: 'Dev Potential', value: developmentPotential, weights: SCORE_WEIGHTS.development_potential, color: 'var(--green)', glow: 'rgba(0, 210, 160, 0.35)' },
-            { label: 'Future Appreciation', value: futureAppreciation, weights: SCORE_WEIGHTS.future_appreciation, color: 'var(--orange)', glow: 'rgba(255, 179, 71, 0.35)' },
-          ].map((scoreItem) => (
-            <div key={scoreItem.label} className="score-bar-group">
-              <div className="sb-label">
-                <span>{scoreItem.label}</span>
-                <span className={`sb-val ${scoreClass(scoreItem.value)}`}>{scoreItem.value.toFixed(0)}</span>
-              </div>
-              <div className="sb-track">
-                <div
-                  className="sb-fill"
-                  style={{
-                    width: `${Math.max(0, Math.min(scoreItem.value, 100))}%`,
-                    backgroundColor: scoreItem.color,
-                    boxShadow: `0 0 10px ${scoreItem.glow}`,
-                  }}
-                />
-              </div>
-              <div className="score-tooltip" dangerouslySetInnerHTML={{ __html: tooltipHtml(scoreItem.weights) }} />
-            </div>
-          ))}
-        </div>
-
-        {radarData && (
-          <div className="detail-chart-shell detail-chart-shell-radar">
-            <Radar
-              key={`radar-${activeId}`}
-              ref={radarChartRef}
-              data={radarData}
-              options={radarOptions}
-            />
+    <div className="details-container">
+      <section className="hero-card detail-hero">
+        <div>
+          <p className="eyebrow">Location intelligence</p>
+          <h3>{selectedName}</h3>
+          <div className="hero-meta">
+            <span><MapPin size={14} /> {locationMeta || 'Mapped location'}</span>
+            <span><Building2 size={14} /> {formatLabel(detail.masterplan?.zoning_type || selectedLocation?.zoning_type)}</span>
+            <span><ShieldCheck size={14} /> {formatLabel(core?.positioning?.recommended_use_case || 'market fit pending')}</span>
           </div>
-        )}
+        </div>
+        <p className="hero-summary">
+          {compactText(core?.key_insight || core?.summary, 'Pricing, planning, infrastructure, and risk in one view.', 110)}
+        </p>
+      </section>
 
-        {distributionMeta ? (
-          <div className="dist-section">
-            <div className="dist-header">
-              <span>Market Percentile</span>
-              <span className="dist-val">{ordinalize(distributionMeta.percentile)}</span>
+      <section className="overview-grid">
+        <ScoreTile label="Land value" value={score.land_value_score.toFixed(0)} tone="green" />
+        <ScoreTile label="Dev potential" value={score.development_potential_score.toFixed(0)} tone="teal" />
+        <ScoreTile label="Future app." value={score.future_appreciation_index.toFixed(0)} tone="amber" />
+        <ScoreTile
+          label="Overall favorability"
+          value={core?.scores?.overall_favorability_score ? core.scores.overall_favorability_score.toFixed(1) : 'N/A'}
+          tone="ink"
+        />
+      </section>
+
+      <section className="chart-grid">
+        <div className="details-section">
+          <div className="section-heading">
+            <BarChart3 size={18} />
+            <h4>Score profile</h4>
+          </div>
+          <div className="chart-box">
+            {radarData ? <Radar data={radarData} options={radarOptions} /> : <p className="muted-copy">Score radar is unavailable.</p>}
+          </div>
+        </div>
+
+        <div className="details-section">
+          <div className="section-heading">
+            <TrendingUp size={18} />
+            <h4>Recorded price path</h4>
+          </div>
+          <div className="chart-box">
+            {priceTrendData ? <Line data={priceTrendData} options={lineOptions} /> : <p className="muted-copy">Not enough price history points to chart a trend.</p>}
+          </div>
+        </div>
+      </section>
+
+      <section className="details-grid">
+        <article className="details-section">
+          <div className="section-heading">
+            <Gauge size={18} />
+            <h4>Decision engine</h4>
+          </div>
+          <div className="stats-grid">
+            <div className="stat-row">
+              <span>Signal</span>
+              <strong>{formatLabel(displayedLogic?.investment_signal)}</strong>
             </div>
-            <div className="detail-chart-shell detail-chart-shell-distribution">
-              <Bar
-                key={`distribution-${activeId}-${distributionMeta.percentile}`}
-                ref={distChartRef}
-                data={distributionMeta.chartData}
-                options={distributionOptions}
-              />
+            <div className="stat-row">
+              <span>Execution</span>
+              <strong>{formatLabel(displayedLogic?.execution_strategy)}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Conviction</span>
+              <strong>{formatLabel(displayedLogic?.conviction)}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Primary driver</span>
+              <strong>{formatLabel(displayedLogic?.primary_driver)}</strong>
             </div>
           </div>
-        ) : (
-          <div className="detail-chart-empty">Not enough market data to plot the local score distribution yet.</div>
-        )}
-      </div>
+          {displayedLogic?.verdict || core?.key_insight ? (
+            <p className="section-copy">
+              {compactText(displayedLogic?.verdict || core?.key_insight, '', 108)}
+            </p>
+          ) : null}
+        </article>
 
-      {masterplan && (
-        <div className="detail-section">
-          <h3>Zoning &amp; FSI</h3>
-          <div className="detail-row"><span className="label">Zone Type</span><span className="val cap">{masterplan.zoning_type}</span></div>
-          <div className="detail-row"><span className="label">FSI</span><span className="val">{masterplan.fsi}</span></div>
-          <div className="detail-row"><span className="label">Max Height</span><span className="val">{masterplan.max_height_m}m</span></div>
-          <div className="detail-row"><span className="label">Ground Coverage</span><span className="val">{masterplan.ground_coverage_pct}%</span></div>
-          <div className="detail-row"><span className="label">Setbacks</span><span className="val">F:{masterplan.setback_front_m}m S:{masterplan.setback_side_m}m</span></div>
-          <div className="detail-row"><span className="label">Source</span><span className="val small">{masterplan.version}</span></div>
-        </div>
-      )}
-
-      {(data.avg_price_per_sqft || sortedPrices.length > 0) && (
-        <div className="detail-section">
-          <h3>Pricing</h3>
-          {data.avg_price_per_sqft && (
-            <div className="detail-row">
-              <span className="label">Avg Price/sqft</span>
-              <span className="val green">Rs {Math.round(toNumber(data.avg_price_per_sqft)).toLocaleString()}</span>
+        <article className="details-section">
+          <div className="section-heading">
+            <TrendingUp size={18} />
+            <h4>Forward outlook</h4>
+          </div>
+          <div className="stats-grid">
+            <div className="stat-row">
+              <span>Current avg. / sqft</span>
+              <strong>{formatCurrency(prediction?.current_avg_price ?? detail.avg_price_per_sqft)}</strong>
             </div>
-          )}
-
-          {priceChartData ? (
-            <div className="price-chart-container">
-              {pctChange && (
-                <div className={`price-change ${Number(pctChange) >= 0 ? 'up' : 'down'}`}>
-                  {Number(pctChange) >= 0 ? '+' : ''}{pctChange}%
-                </div>
-              )}
-              <div className="detail-chart-shell detail-chart-shell-price">
-                <Line
-                  key={`price-${activeId}-${sortedPrices.length}`}
-                  ref={priceChartRef}
-                  data={priceChartData}
-                  options={priceChartOptions}
-                />
-              </div>
+            <div className="stat-row">
+              <span>1Y projected</span>
+              <strong>{formatCurrency(prediction?.predicted_price_1yr ?? intelligence?.predicted_price_1yr)}</strong>
             </div>
-          ) : (
-            <div className="detail-chart-empty">More than one pricing snapshot is needed before the trend chart can be drawn.</div>
-          )}
-        </div>
-      )}
+            <div className="stat-row">
+              <span>3Y projected</span>
+              <strong>{formatCurrency(prediction?.predicted_price_3yr ?? intelligence?.predicted_price_3yr)}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Upside</span>
+              <strong>{formatPercent(prediction?.predicted_upside_pct)}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Confidence</span>
+              <strong>{formatLabel(prediction?.confidence || intelligence?.prediction_confidence)}</strong>
+            </div>
+          </div>
+          {prediction?.summary || core?.forward_outlook?.summary ? (
+            <p className="section-copy">
+              {compactText(prediction?.summary || core?.forward_outlook?.summary, '', 108)}
+            </p>
+          ) : null}
+        </article>
 
-      {census && (
-        <div className="detail-section">
-          <h3>Demographics ({census.year})</h3>
-          <div className="detail-row"><span className="label">Population</span><span className="val">{census.population?.toLocaleString()}</span></div>
-          <div className="detail-row"><span className="label">Density</span><span className="val">{census.density_per_sqkm?.toLocaleString()}/km²</span></div>
-          <div className="detail-row"><span className="label">Growth Rate</span><span className="val">{census.growth_rate_pct}%</span></div>
-          <div className="detail-row"><span className="label">Households</span><span className="val">{census.households?.toLocaleString()}</span></div>
-        </div>
-      )}
+        <article className="details-section">
+          <div className="section-heading">
+            <Building2 size={18} />
+            <h4>Planning and standards</h4>
+          </div>
+          <div className="stats-grid">
+            <div className="stat-row">
+              <span>FSI / FAR</span>
+              <strong>{detail.masterplan?.fsi || intelligence?.fsi || 'N/A'}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Max height</span>
+              <strong>{detail.masterplan?.max_height_m ? `${detail.masterplan.max_height_m} m` : 'N/A'}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Ground coverage</span>
+              <strong>{detail.masterplan?.ground_coverage_pct ? `${detail.masterplan.ground_coverage_pct}%` : 'N/A'}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Planning context</span>
+              <strong>{planningContext?.version_tag || intelligence?.planning_context_version || 'N/A'}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Standards linked</span>
+              <strong>{formatNumber(detail.regional_standards?.length || 0)}</strong>
+            </div>
+          </div>
+        </article>
 
-      {infra.length > 0 && (
-        <div className="detail-section">
-          <h3>Nearby Infrastructure ({infra.length})</h3>
-          <div className="infra-timeline">
-            {infrastructurePhases.map((phase) => (
-              <div key={phase.label} className={`infra-phase ${phase.cls}`}>
-                <div className="phase-header">{phase.label} <span className="phase-count">{phase.items.length}</span></div>
-                <div className="phase-items">
-                  {phase.items.length > 0
-                    ? phase.items.map((item, index) => (
-                      <div key={`${phase.label}-${index}`} className="phase-item">
-                        <span className="pi-name">{item.name}</span>
-                        <span className="pi-dist">{item.distance_km}km</span>
-                      </div>
-                    ))
-                    : <div className="phase-item empty">None</div>}
+        <article className="details-section">
+          <div className="section-heading">
+            <CloudSun size={18} />
+            <h4>Site and climate</h4>
+          </div>
+          <div className="stats-grid">
+            <div className="stat-row">
+              <span>Terrain</span>
+              <strong>{formatLabel(intelligence?.terrain_class || detail.geo_profile?.terrain_class)}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Slope</span>
+              <strong>{intelligence?.terrain_slope_pct ? `${intelligence.terrain_slope_pct}%` : 'N/A'}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Flood risk</span>
+              <strong>{formatPercent(intelligence?.flood_risk_score ?? detail.geo_profile?.flood_risk_score)}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Heat risk</span>
+              <strong>{formatPercent(intelligence?.heat_risk_score ?? detail.geo_profile?.heat_risk_score)}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Climate risk</span>
+              <strong>{formatPercent(intelligence?.climate_risk_score ?? detail.geo_profile?.climate_risk_score)}</strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="details-section">
+          <div className="section-heading">
+            <Users size={18} />
+            <h4>Demand and price context</h4>
+          </div>
+          <div className="stats-grid">
+            <div className="stat-row">
+              <span>Population</span>
+              <strong>{formatNumber(detail.census?.population)}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Growth rate</span>
+              <strong>{formatPercent(detail.census?.growth_rate_pct)}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Density / sqkm</span>
+              <strong>{formatNumber(detail.census?.density_per_sqkm)}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Avg. price / sqft</span>
+              <strong>{formatCurrency(detail.avg_price_per_sqft)}</strong>
+            </div>
+            <div className="stat-row">
+              <span>Data confidence</span>
+              <strong>{formatLabel(intelligence?.data_confidence_band || score.components?.data_confidence_band)}</strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="details-section">
+          <div className="section-heading">
+            <Zap size={18} />
+            <h4>Nearby infrastructure</h4>
+          </div>
+          <div className="catchment-list large">
+            {nearbyInfrastructure.slice(0, 6).map((item) => (
+              <div key={`${item.name}-${item.distance_km}`} className="catchment-row">
+                <div>
+                  <strong>{item.name}</strong>
+                  <span>{formatLabel(item.infra_type)} • {formatLabel(item.status)}</span>
                 </div>
+                <strong>{formatDistance(item.distance_km)}</strong>
               </div>
             ))}
+            {nearbyInfrastructure.length === 0 ? <p className="muted-copy">No nearby infrastructure was returned for this location.</p> : null}
           </div>
-        </div>
-      )}
+        </article>
+      </section>
 
-      <div className="detail-section">
-        <button className="analyze-btn" onClick={handleAnalyze} disabled={analyzing}>
-          {analyzing ? <><span className="spinner" /> Analyzing...</> : 'Analyze with AI'}
+      <section className="signal-stack">
+        <SignalList
+          title="Strengths"
+          items={core?.strengths}
+          tone="strong"
+          isOpen={expandedPanels.strengths}
+          onToggle={() => togglePanel('strengths')}
+        />
+        <SignalList
+          title="Risks"
+          items={core?.risks}
+          tone="risk"
+          isOpen={expandedPanels.risks}
+          onToggle={() => togglePanel('risks')}
+        />
+        <SignalList
+          title="Opportunities"
+          items={core?.opportunities}
+          tone="watch"
+          isOpen={expandedPanels.opportunities}
+          onToggle={() => togglePanel('opportunities')}
+        />
+      </section>
+
+      <section className="details-section accordion-section">
+        <button
+          type="button"
+          className="accordion-toggle section-toggle"
+          onClick={() => togglePanel('ai')}
+          aria-expanded={expandedPanels.ai}
+        >
+          <div className="accordion-copy">
+            <div className="section-heading compact">
+              <Sparkles size={18} />
+              <h4>AI deep dive</h4>
+            </div>
+            <p className="accordion-preview">
+              {analysis
+                ? 'AI brief is ready. Open to review the summary and recommended questions.'
+                : 'Run a market brief only when you want the expanded AI readout.'}
+            </p>
+          </div>
+          <ChevronDown size={16} className="accordion-icon" />
         </button>
-        {analysis && (
-          <>
-            {!!analysis.cards?.length && (
-              <div className="analysis-cards">
-                {analysis.cards.map((item) => (
-                  <div key={`${item.label}-${item.value}`} className={`analysis-card tone-${item.tone || 'neutral'}`}>
-                    <div className="analysis-card-label">{item.label}</div>
-                    <div className="analysis-card-value">{item.value}</div>
+
+        {expandedPanels.ai ? (
+          <div className="accordion-body section-body">
+            <button className="ai-analyze-btn" onClick={runAnalysis} disabled={analysisLoading}>
+              <Sparkles size={17} />
+              <span>{analysisLoading ? 'Generating...' : 'Run AI brief'}</span>
+            </button>
+
+            {analysisError ? <p className="panel-inline-error">{analysisError}</p> : null}
+
+            {analysis ? (
+              <div className="analysis-shell">
+                <div className="analysis-card-grid">
+                  {analysis.cards?.map((card) => (
+                    <article key={`${card.label}-${card.value}`} className={`insight-card tone-${card.tone}`}>
+                      <span>{card.label}</span>
+                      <strong>{card.value}</strong>
+                    </article>
+                  ))}
+                </div>
+
+                <div
+                  className="analysis-markdown"
+                  dangerouslySetInnerHTML={{ __html: formatMarkdown(analysis.analysis) }}
+                />
+
+                {analysis.recommended_questions?.length ? (
+                  <div className="question-strip">
+                    {analysis.recommended_questions.slice(0, 3).map((question) => (
+                      <span key={question} className="question-chip">{question}</span>
+                    ))}
                   </div>
-                ))}
+                ) : null}
               </div>
-            )}
-            <div className="analysis-result" dangerouslySetInnerHTML={{ __html: formatMarkdown(analysis.analysis) }} />
-            {!!analysis.recommended_questions?.length && (
-              <div className="analysis-questions">
-                {analysis.recommended_questions.map((item) => (
-                  <div key={item} className="analysis-question">{item}</div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
     </div>
   )
 }

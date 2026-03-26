@@ -1,107 +1,362 @@
-import { Suspense, lazy, useState, useEffect, useCallback } from 'react'
-import Header from './components/Header'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
+import { Building2, GitCompareArrows, MapPinned, Menu, MoonStar, RotateCcw, SunMedium } from 'lucide-react'
 import RankingsPanel from './components/RankingsPanel'
-import { fetchLocations, fetchRankings } from './api'
+import { fetchHotspots, fetchLocations, fetchRankings } from './api'
+import { locationLabel } from './utils'
 import './styles/App.css'
 
 const MapView = lazy(() => import('./components/MapView'))
 const RightPanel = lazy(() => import('./components/RightPanel'))
 
+const LEFT_PANEL_STORAGE_KEY = 'builtattic-left-panel-width'
+const RIGHT_PANEL_STORAGE_KEY = 'builtattic-right-panel-width'
+const LEFT_PANEL_DEFAULT = 270
+const RIGHT_PANEL_DEFAULT = 336
+const LEFT_PANEL_MIN = 232
+const LEFT_PANEL_MAX = 360
+const RIGHT_PANEL_MIN = 286
+const RIGHT_PANEL_MAX = 430
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function readStoredWidth(key, fallback, min, max) {
+  const storedValue = Number(localStorage.getItem(key))
+  if (!Number.isFinite(storedValue)) return fallback
+  return clamp(storedValue, min, max)
+}
+
 export default function App() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
   const [locations, setLocations] = useState({})
   const [rankings, setRankings] = useState([])
+  const [hotspots, setHotspots] = useState([])
+  const [locationsLoading, setLocationsLoading] = useState(false)
+  const [locationsError, setLocationsError] = useState('')
   const [rankingsLoading, setRankingsLoading] = useState(false)
   const [rankingsError, setRankingsError] = useState('')
+  const [hotspotsError, setHotspotsError] = useState('')
   const [sortBy, setSortBy] = useState('land_value_score')
   const [activeId, setActiveId] = useState(null)
   const [activeTab, setActiveTab] = useState('details')
   const [compareMode, setCompareMode] = useState(false)
   const [compareIds, setCompareIds] = useState([])
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [leftPanelWidth, setLeftPanelWidth] = useState(() => (
+    readStoredWidth(LEFT_PANEL_STORAGE_KEY, LEFT_PANEL_DEFAULT, LEFT_PANEL_MIN, LEFT_PANEL_MAX)
+  ))
+  const [rightPanelWidth, setRightPanelWidth] = useState(() => (
+    readStoredWidth(RIGHT_PANEL_STORAGE_KEY, RIGHT_PANEL_DEFAULT, RIGHT_PANEL_MIN, RIGHT_PANEL_MAX)
+  ))
+  const resizeSessionRef = useRef(null)
 
   useEffect(() => {
-    fetchLocations().then(locs => {
-      const map = {}
-      locs.forEach(l => { map[l.id] = l })
-      setLocations(map)
-    }).catch(console.error)
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
+
+  useEffect(() => {
+    localStorage.setItem(LEFT_PANEL_STORAGE_KEY, String(leftPanelWidth))
+  }, [leftPanelWidth])
+
+  useEffect(() => {
+    localStorage.setItem(RIGHT_PANEL_STORAGE_KEY, String(rightPanelWidth))
+  }, [rightPanelWidth])
+
+  useEffect(() => {
+    function stopResize() {
+      if (!resizeSessionRef.current) return
+      resizeSessionRef.current = null
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
+    function handlePointerMove(event) {
+      const session = resizeSessionRef.current
+      if (!session) return
+
+      const deltaX = event.clientX - session.startX
+
+      if (session.side === 'left') {
+        setLeftPanelWidth(clamp(session.startWidth + deltaX, LEFT_PANEL_MIN, LEFT_PANEL_MAX))
+        return
+      }
+
+      setRightPanelWidth(clamp(session.startWidth - deltaX, RIGHT_PANEL_MIN, RIGHT_PANEL_MAX))
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', stopResize)
+    window.addEventListener('pointercancel', stopResize)
+
+    return () => {
+      stopResize()
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', stopResize)
+      window.removeEventListener('pointercancel', stopResize)
+    }
   }, [])
 
   useEffect(() => {
-    setRankingsLoading(true)
-    setRankingsError('')
-    fetchRankings(sortBy)
-      .then(setRankings)
+    let cancelled = false
+    setLocationsLoading(true)
+    setLocationsError('')
+
+    fetchLocations()
+      .then((rows) => {
+        if (cancelled) return
+        const mappedLocations = {}
+        rows.forEach((location) => {
+          mappedLocations[location.id] = location
+        })
+        setLocations(mappedLocations)
+      })
       .catch((error) => {
         console.error(error)
-        setRankings([])
-        setRankingsError('Rankings could not be loaded right now.')
+        if (!cancelled) setLocationsError('Location registry is unavailable right now.')
       })
-      .finally(() => setRankingsLoading(false))
-  }, [sortBy])
+      .finally(() => {
+        if (!cancelled) setLocationsLoading(false)
+      })
 
-  const handleSelectLocation = useCallback((id) => {
-    if (compareMode) {
-      setCompareIds(prev => {
-        if (prev.includes(id)) return prev.filter(x => x !== id)
-        if (prev.length >= 3) return prev
-        return [...prev, id]
-      })
-    } else {
-      setActiveId(id)
-      setActiveTab('details')
+    return () => {
+      cancelled = true
     }
-  }, [compareMode])
-
-  const toggleCompare = useCallback(() => {
-    setCompareMode(prev => {
-      if (prev) setCompareIds([])
-      return !prev
-    })
   }, [])
 
-  const locationCount = Object.keys(locations).length
-  const stateCount = new Set(
-    Object.values(locations)
-      .map(location => location.state)
-      .filter(Boolean),
-  ).size
+  useEffect(() => {
+    let cancelled = false
+    setRankingsLoading(true)
+    setRankingsError('')
+
+    fetchRankings(sortBy, 24)
+      .then((rows) => {
+        if (!cancelled) setRankings(rows)
+      })
+      .catch((error) => {
+        console.error(error)
+        if (!cancelled) {
+          setRankings([])
+          setRankingsError('Market rankings could not be loaded.')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setRankingsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [sortBy])
+
+  useEffect(() => {
+    let cancelled = false
+    setHotspotsError('')
+
+    fetchHotspots()
+      .then((rows) => {
+        if (!cancelled) setHotspots(rows)
+      })
+      .catch((error) => {
+        console.error(error)
+        if (!cancelled) setHotspotsError('Hotspot clustering is unavailable.')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const activeLocation = activeId ? locations[activeId] : null
+  const locationList = Object.values(locations)
+  const locationCount = locationList.length
+  const stateCount = new Set(locationList.map((location) => location.state).filter(Boolean)).size
+  const hasSelection = Boolean(activeId) || compareIds.length > 0
+
+  function handleSelectLocation(id) {
+    if (!id) return
+
+    if (compareMode) {
+      handleToggleCompareId(id)
+      setActiveTab('compare')
+      return
+    }
+
+    setActiveId(id)
+    setActiveTab('details')
+    setIsMobileMenuOpen(false)
+  }
+
+  function handleToggleCompareId(id) {
+    setCompareIds((current) => {
+      if (current.includes(id)) return current.filter((item) => item !== id)
+      if (current.length >= 3) return current
+      return [...current, id]
+    })
+
+    if (!activeId) setActiveId(id)
+  }
+
+  function clearContext() {
+    setActiveId(null)
+    setCompareIds([])
+    setCompareMode(false)
+    setActiveTab('details')
+  }
+
+  function beginResize(side, event) {
+    if (window.innerWidth <= 1180) return
+
+    resizeSessionRef.current = {
+      side,
+      startX: event.clientX,
+      startWidth: side === 'left' ? leftPanelWidth : rightPanelWidth,
+    }
+
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }
 
   return (
-    <div className="app">
-      <Header locationCount={locationCount} stateCount={stateCount} />
-      <RankingsPanel
-        rankings={rankings}
-        loading={rankingsLoading}
-        error={rankingsError}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-        activeId={activeId}
-        onSelect={handleSelectLocation}
-      />
-      <Suspense fallback={<div className="map-loading"><span className="spinner" /> Loading map intelligence...</div>}>
-        <MapView
-          locations={locations}
-          rankings={rankings}
-          sortBy={sortBy}
-          activeId={activeId}
-          onSelect={handleSelectLocation}
-          compareMode={compareMode}
-          compareIds={compareIds}
-          onToggleCompare={toggleCompare}
-          onRemoveCompare={(id) => setCompareIds(prev => prev.filter(x => x !== id))}
-          onRunCompare={() => setActiveTab('compare')}
-        />
-      </Suspense>
-      <Suspense fallback={<div className="side-loading"><span className="spinner" /> Loading analysis tools...</div>}>
-        <RightPanel
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          activeId={activeId}
-          compareIds={compareIds}
-          locations={locations}
-          rankings={rankings}
-        />
-      </Suspense>
+    <div className={`app theme-${theme}`}>
+      <main
+        className="app-main"
+        style={{
+          '--left-panel-width': `${leftPanelWidth}px`,
+          '--right-panel-width': `${rightPanelWidth}px`,
+        }}
+      >
+        <section className="app-sidebar">
+          <RankingsPanel
+            rankings={rankings}
+            loading={rankingsLoading}
+            error={rankingsError || locationsError}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            activeId={activeId}
+            compareIds={compareIds}
+            compareMode={compareMode}
+            onToggleCompareMode={() => setCompareMode((current) => !current)}
+            onToggleCompareId={handleToggleCompareId}
+            onOpenCompare={() => setActiveTab('compare')}
+            onSelect={handleSelectLocation}
+            isOpen={isMobileMenuOpen}
+            onClose={() => setIsMobileMenuOpen(false)}
+          />
+        </section>
+
+        <button
+          type="button"
+          className="panel-resizer left-resizer"
+          onPointerDown={(event) => beginResize('left', event)}
+          onDoubleClick={() => setLeftPanelWidth(LEFT_PANEL_DEFAULT)}
+          aria-label="Resize market board"
+          title="Drag to resize market board. Double-click to reset."
+        >
+          <span />
+        </button>
+
+        <section className="map-shell">
+          <div className="map-shell-header">
+            <div className="map-shell-copy">
+              <p className="eyebrow">Spatial Layer</p>
+              <h2 className="display-heading">Corridors, clusters, and timing.</h2>
+              <p>Click into a market and move from macro view to diligence in one step.</p>
+            </div>
+
+            <div className="map-shell-toolbar">
+              <div className="map-shell-meta">
+                <span><MapPinned size={13} /> {rankings.length || locationCount} markets</span>
+                <span><Building2 size={13} /> {stateCount} states</span>
+                <span><GitCompareArrows size={13} /> {compareIds.length} compare</span>
+                {activeLocation ? <span>{locationLabel(activeLocation)}</span> : null}
+                {hotspotsError ? <span className="meta-warning">{hotspotsError}</span> : null}
+              </div>
+
+              <div className="map-shell-actions">
+                <button
+                  type="button"
+                  className="workspace-action mobile-only"
+                  onClick={() => setIsMobileMenuOpen(true)}
+                >
+                  <Menu size={15} />
+                  <span>Markets</span>
+                </button>
+
+                {hasSelection ? (
+                  <button type="button" className="workspace-action secondary" onClick={clearContext}>
+                    <RotateCcw size={15} />
+                    <span>Reset</span>
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  className="workspace-action"
+                  onClick={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
+                  title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                >
+                  {theme === 'dark' ? <SunMedium size={16} /> : <MoonStar size={16} />}
+                  <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="map-container">
+            <Suspense fallback={<div className="map-loading"><span className="spinner" /></div>}>
+              <MapView
+                theme={theme}
+                locations={locations}
+                rankings={rankings}
+                hotspots={hotspots}
+                sortBy={sortBy}
+                activeId={activeId}
+                compareMode={compareMode}
+                compareIds={compareIds}
+                onSelect={handleSelectLocation}
+                onToggleCompareMode={() => setCompareMode((current) => !current)}
+                onToggleCompareId={handleToggleCompareId}
+                onRunCompare={() => setActiveTab('compare')}
+              />
+            </Suspense>
+          </div>
+        </section>
+
+        <button
+          type="button"
+          className="panel-resizer right-resizer"
+          onPointerDown={(event) => beginResize('right', event)}
+          onDoubleClick={() => setRightPanelWidth(RIGHT_PANEL_DEFAULT)}
+          aria-label="Resize briefing panel"
+          title="Drag to resize briefing panel. Double-click to reset."
+        >
+          <span />
+        </button>
+
+        <section className="inspector-shell">
+          <Suspense fallback={<div className="side-loading"><span className="spinner" /></div>}>
+            <RightPanel
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              activeId={activeId}
+              compareIds={compareIds}
+              locations={locations}
+              rankings={rankings}
+              hotspots={hotspots}
+              onClose={clearContext}
+            />
+          </Suspense>
+        </section>
+      </main>
+
+      {(locationsLoading || rankingsLoading) && (
+        <div className="global-loading-indicator glass">
+          <span className="spinner" />
+          <span>Refreshing market intelligence</span>
+        </div>
+      )}
     </div>
   )
 }

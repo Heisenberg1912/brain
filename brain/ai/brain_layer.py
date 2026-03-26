@@ -651,6 +651,22 @@ def _ownership_module(session: Session, location_id: int) -> dict[str, Any]:
 def _strategy_module(core: dict) -> dict[str, Any]:
     logic = core["logic"]
     summary = logic.get("verdict") or core.get("key_insight") or "Execution strategy is available."
+    
+    # Adding more granular execution strategy logic
+    execution_steps = []
+    if logic["investment_signal"] in ["acquire", "accumulate"]:
+        execution_steps = [
+            "Validate zoning boundaries against on-ground reality.",
+            "Review fractional ownership potential for early capital recycling.",
+            "Run 3D massing simulation based on FSI headroom."
+        ]
+    else:
+        execution_steps = [
+            "Monitor nearby infrastructure timeline for re-rating.",
+            "Evaluate secondary use-case fit if primary remains capped.",
+            "Keep as a passive 'Growth Corridor' reference site."
+        ]
+
     return {
         "key": "strategy",
         "title": "Execution Strategy",
@@ -679,6 +695,8 @@ def _strategy_module(core: dict) -> dict[str, Any]:
             "key_insight": core["key_insight"],
             "gating_issue": logic.get("gating_issue"),
             "weighted_components": logic.get("weighted_components", []),
+            "execution_steps": execution_steps,
+            "capital_efficiency_score": 85 if logic["execution_strategy"] == "build_now" else 60
         },
     }
 

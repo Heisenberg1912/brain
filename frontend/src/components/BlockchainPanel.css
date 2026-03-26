@@ -1,0 +1,184 @@
+.blockchain-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.chain-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.95rem 1.05rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at top right, rgba(73, 165, 207, 0.18), transparent 34%),
+    var(--surface-soft);
+}
+
+.chain-hero h3,
+.chain-hero p {
+  margin: 0;
+}
+
+.chain-hero h3 {
+  font-family: var(--display);
+  font-size: 1.3rem;
+}
+
+.chain-hero p:last-child {
+  margin-top: 0.4rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  max-width: 32ch;
+}
+
+.chain-hero-stats,
+.bp-grid,
+.bp-list,
+.bp-icon-row {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.chain-hero-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: 15rem;
+}
+
+.hero-stat,
+.bp-card {
+  padding: 0.8rem 0.85rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.hero-stat span,
+.bp-card p,
+.bp-card small,
+.bp-meta-row span {
+  color: var(--text-muted);
+}
+
+.bp-card p,
+.bp-card small {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.hero-stat strong {
+  display: block;
+  margin-top: 0.28rem;
+  font-size: 1.04rem;
+}
+
+.bp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.bp-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.bp-header h4 {
+  margin: 0;
+}
+
+.bp-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.bp-list {
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.bp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.bp-card.compact {
+  min-height: 7.5rem;
+}
+
+.bp-card.highlight {
+  border-color: rgba(241, 185, 107, 0.32);
+}
+
+.bp-card-top,
+.bp-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.bp-card strong {
+  font-size: 0.88rem;
+}
+
+.bp-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.28rem 0.52rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.bp-badge.status-minted,
+.bp-badge.status-active {
+  background: rgba(38, 194, 140, 0.16);
+}
+
+.bp-icon-row {
+  grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
+}
+
+.bp-icon-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.bp-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.empty-msg {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+@media (max-width: 960px) {
+  .chain-hero,
+  .bp-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chain-hero {
+    flex-direction: column;
+  }
+
+  .chain-hero-stats {
+    min-width: 0;
+    width: 100%;
+  }
+}

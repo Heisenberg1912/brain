@@ -1,454 +1,599 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet.heat'
+import {
+  Activity,
+  GitCompareArrows,
+  Layers3,
+  LocateFixed,
+  Network,
+} from 'lucide-react'
 import { fetchInfrastructure, fetchNearbyInfra } from '../api'
-import { INFRA_CONFIG, ZONING_COLORS } from '../utils'
+import {
+  formatDistance,
+  formatLabel,
+  INFRA_CONFIG,
+  locationLabel,
+  scoreHex,
+  ZONING_COLORS,
+} from '../utils'
 import './MapView.css'
 
-const CATCHMENT_RADIUS_KM = 5
-const CATCHMENT_RADIUS_M = CATCHMENT_RADIUS_KM * 1000
 const INDIA_CENTER = [22.5937, 78.9629]
 const INDIA_ZOOM = 5
 
-function withAlpha(hex, alpha) {
-  const normalized = hex.replace('#', '')
-  const expanded = normalized.length === 3
-    ? normalized.split('').map(char => char + char).join('')
-    : normalized
-  const value = Number.parseInt(expanded, 16)
-  const r = (value >> 16) & 255
-  const g = (value >> 8) & 255
-  const b = value & 255
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+function preferredBasemap(theme) {
+  return theme === 'light' ? 'carto-light' : 'carto-dark'
 }
 
-function getZoneRadius(score = 50) {
-  return 260 + Math.round(score * 9)
+function tileConfig(mode) {
+  if (mode === 'carto-light') {
+    return {
+      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      options: {
+        subdomains: 'abcd',
+        maxZoom: 20,
+      },
+    }
+  }
+
+  if (mode === 'carto-dark') {
+    return {
+      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      options: {
+        subdomains: 'abcd',
+        maxZoom: 20,
+      },
+    }
+  }
+
+  return {
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    options: {
+      maxZoom: 19,
+    },
+  }
 }
 
-function getZoneFillOpacity(score = 50, isActive = false) {
-  return Math.min(0.28, (isActive ? 0.18 : 0.10) + score / 900)
-}
-
-function createMarkerIcon(color, score, isActive, zoom) {
-  const size = Math.max(18, Math.min(38, zoom * 2.15))
-  const displayScore = zoom >= 14 || isActive
-  const bubbleSize = isActive ? size + 8 : size
-  const frameSize = bubbleSize + 22
+function createLocationMarker({ score, zoning, active, compared }) {
+  const markerColor = scoreHex(score)
+  const zoningColor = ZONING_COLORS[zoning] || ZONING_COLORS.unclassified
 
   return L.divIcon({
-    className: '',
-    iconSize: [frameSize, frameSize],
-    iconAnchor: [frameSize / 2, frameSize / 2],
-    html: `<div class="map-marker ${isActive ? 'active' : ''}" style="width:${frameSize}px;height:${frameSize}px">
-      <div class="marker-glow" style="background:${withAlpha(color, isActive ? 0.28 : 0.18)}"></div>
-      <div class="ring" style="border-color:${withAlpha(color, 0.7)}"></div>
-      <div class="score-bubble" style="width:${bubbleSize}px;height:${bubbleSize}px;background:linear-gradient(180deg, ${withAlpha(color, 0.96)}, ${withAlpha(color, 0.72)});border-color:${withAlpha(color, isActive ? 0.82 : 0.56)};box-shadow:0 12px 28px ${withAlpha(color, isActive ? 0.28 : 0.16)}">
-        ${displayScore ? `<span class="score-text">${Math.round(score)}</span>` : '<span class="score-dot"></span>'}
+    className: 'custom-location-marker',
+    iconSize: [42, 42],
+    iconAnchor: [21, 21],
+    html: `
+      <div
+        class="marker-shell ${active ? 'is-active' : ''} ${compared ? 'is-compared' : ''}"
+        style="--marker-color:${markerColor}; --marker-ring:${zoningColor};"
+      >
+        <span class="marker-score">${Math.round(score || 0)}</span>
       </div>
-    </div>`,
+    `,
   })
 }
 
+function isMapUsable(map) {
+  return Boolean(map && map._loaded && map._mapPane && map._container)
+}
+
+function parseCoordinate(value) {
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) ? numericValue : null
+}
+
+function toLatLng(location) {
+  const lat = parseCoordinate(location?.lat)
+  const lng = parseCoordinate(location?.lng)
+
+  if (lat === null || lng === null) return null
+  return [lat, lng]
+}
+
+function hasValidCoords(location) {
+  return Boolean(toLatLng(location))
+}
+
 export default function MapView({
-  locations, rankings, sortBy, activeId, onSelect,
-  compareMode, compareIds, onToggleCompare, onRemoveCompare, onRunCompare,
+  theme,
+  locations,
+  rankings,
+  hotspots,
+  sortBy,
+  activeId,
+  compareMode,
+  compareIds,
+  onSelect,
+  onToggleCompareMode,
+  onRunCompare,
 }) {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
-  const markersRef = useRef({})
-  const catchmentRef = useRef(null)
-  const catchmentInfraRef = useRef(null) // layer group for infra within catchment
-  const connectionLinesRef = useRef(null) // lines from location to infra
+  const tileLayerRef = useRef(null)
+  const locationLayerRef = useRef(null)
+  const infrastructureLayerRef = useRef(null)
   const heatLayerRef = useRef(null)
-  const infraLayersRef = useRef({})
-  const zoningLayerRef = useRef(null)
-  const initialBoundsAppliedRef = useRef(false)
-
-  // Cache infrastructure data so we don't re-fetch
-  const infraCacheRef = useRef(null)
-  // Cache nearby infra per location
-  const nearbyCacheRef = useRef({})
+  const hasFitBoundsRef = useRef(false)
+  const resizeObserverRef = useRef(null)
+  const resizeFrameRef = useRef(null)
 
   const [heatmapActive, setHeatmapActive] = useState(false)
-  const [zoningActive, setZoningActive] = useState(true)
-  const [infraPanelOpen, setInfraPanelOpen] = useState(false)
-  const [infraData, setInfraData] = useState([])
-  const [infraVisible, setInfraVisible] = useState({})
-  const [zoom, setZoom] = useState(12)
-  const [catchmentStats, setCatchmentStats] = useState(null)
+  const [infrastructureActive, setInfrastructureActive] = useState(true)
+  const [infrastructure, setInfrastructure] = useState([])
+  const [infrastructureError, setInfrastructureError] = useState('')
+  const [nearbyInfrastructure, setNearbyInfrastructure] = useState([])
+  const [basemapMode, setBasemapMode] = useState(() => preferredBasemap(theme))
 
-  const rankingById = useMemo(
-    () => Object.fromEntries(rankings.map(r => [r.location_id, r])),
-    [rankings],
+  const rankingById = useMemo(() => {
+    const lookup = {}
+    rankings.forEach((row) => {
+      lookup[row.location_id] = row
+    })
+    return lookup
+  }, [rankings])
+
+  const activeLocation = activeId ? locations[activeId] : null
+  const mappedLocations = useMemo(
+    () => Object.values(locations).filter(hasValidCoords),
+    [locations],
   )
 
-  // Init map
-  useEffect(() => {
-    if (mapInstanceRef.current) return
-    const map = L.map(mapRef.current, { zoomControl: false, fadeAnimation: true }).setView(INDIA_CENTER, INDIA_ZOOM)
-    map.createPane('zoningPane')
-    map.getPane('zoningPane').style.zIndex = '320'
-    L.control.zoom({ position: 'topright' }).addTo(map)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OSM &copy; CARTO',
-      maxZoom: 19,
-    }).addTo(map)
+  const infrastructureCounts = useMemo(() => {
+    return infrastructure.reduce((summary, item) => {
+      const key = item.infra_type
+      summary[key] = (summary[key] || 0) + 1
+      return summary
+    }, {})
+  }, [infrastructure])
 
-    map.on('zoomend', () => setZoom(map.getZoom()))
+  const compareNames = useMemo(
+    () => compareIds.map((id) => locationLabel(locations[id], '')).filter(Boolean),
+    [compareIds, locations],
+  )
+
+  const spotlightHotspots = hotspots.slice(0, 3)
+
+  useEffect(() => {
+    setBasemapMode(preferredBasemap(theme))
+  }, [theme])
+
+  useEffect(() => {
+    if (!mapRef.current || isMapUsable(mapInstanceRef.current)) return
+
+    const initialTileConfig = tileConfig(basemapMode)
+
+    const map = L.map(mapRef.current, {
+      zoomControl: false,
+      attributionControl: false,
+      minZoom: 4,
+      maxZoom: 17,
+      scrollWheelZoom: false,
+      preferCanvas: true,
+    }).setView(INDIA_CENTER, INDIA_ZOOM)
+
+    tileLayerRef.current = L.tileLayer(initialTileConfig.url, initialTileConfig.options).addTo(map)
+
+    locationLayerRef.current = L.layerGroup().addTo(map)
+    infrastructureLayerRef.current = L.layerGroup().addTo(map)
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map)
+
     mapInstanceRef.current = map
+    resizeFrameRef.current = requestAnimationFrame(() => {
+      if (isMapUsable(map)) {
+        map.invalidateSize({ pan: false, debounceMoveend: true })
+      }
+    })
+
+    return () => {
+      if (resizeFrameRef.current) {
+        cancelAnimationFrame(resizeFrameRef.current)
+        resizeFrameRef.current = null
+      }
+
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect()
+        resizeObserverRef.current = null
+      }
+
+      if (heatLayerRef.current && map.hasLayer(heatLayerRef.current)) {
+        map.removeLayer(heatLayerRef.current)
+      }
+
+      map.off()
+      map.remove()
+      mapInstanceRef.current = null
+      tileLayerRef.current = null
+      locationLayerRef.current = null
+      infrastructureLayerRef.current = null
+      heatLayerRef.current = null
+      hasFitBoundsRef.current = false
+    }
   }, [])
 
   useEffect(() => {
-    const map = mapInstanceRef.current
-    if (!map || activeId || initialBoundsAppliedRef.current) return
+    if (!tileLayerRef.current || !isMapUsable(mapInstanceRef.current)) return
 
-    const points = Object.values(locations)
-      .filter(loc => loc.lat != null && loc.lng != null)
-      .map(loc => [loc.lat, loc.lng])
+    const currentLayer = tileLayerRef.current
+    const nextTileConfig = tileConfig(basemapMode)
+    let switched = false
 
-    if (points.length === 0) {
-      map.setView(INDIA_CENTER, INDIA_ZOOM)
-      initialBoundsAppliedRef.current = true
-      return
-    }
-
-    if (points.length === 1) {
-      map.setView(points[0], 11)
-      initialBoundsAppliedRef.current = true
-      return
-    }
-
-    map.fitBounds(points, { padding: [36, 36], maxZoom: 6 })
-    initialBoundsAppliedRef.current = true
-  }, [locations, activeId])
-
-  // Add/update location markers
-  useEffect(() => {
-    const map = mapInstanceRef.current
-    if (!map) return
-
-    Object.values(locations).forEach(loc => {
-      if (loc.lat == null || loc.lng == null) return
-      if (markersRef.current[loc.id]) return
-
-      const marker = L.marker([loc.lat, loc.lng], {
-        icon: createMarkerIcon('#6c5ce7', 0, false, map.getZoom()),
-      }).addTo(map)
-      marker.on('click', () => onSelect(loc.id))
-      marker.bindTooltip(loc.name, { direction: 'top', offset: [0, -20], className: 'custom-tooltip' })
-      markersRef.current[loc.id] = marker
+    currentLayer.setUrl(nextTileConfig.url)
+    Object.entries(nextTileConfig.options || {}).forEach(([key, value]) => {
+      currentLayer.options[key] = value
     })
-  }, [locations, onSelect])
 
-  // Zoning Layer (Simulated Master Plan)
-  useEffect(() => {
-    const map = mapInstanceRef.current
-    if (!map || !locations) return
-
-    if (zoningLayerRef.current) {
-      map.removeLayer(zoningLayerRef.current)
+    const handleTileError = () => {
+      if (switched || basemapMode === 'osm') return
+      switched = true
+      setBasemapMode('osm')
     }
 
-    if (zoningActive) {
-      const layer = L.layerGroup()
+    currentLayer.on('tileerror', handleTileError)
 
-      Object.values(locations).forEach(loc => {
-        if (loc.lat == null || loc.lng == null) return
+    return () => {
+      currentLayer.off('tileerror', handleTileError)
+    }
+  }, [basemapMode])
 
-        const ranking = rankingById[loc.id]
-        const score = ranking?.[sortBy] ?? 50
-        const color = ZONING_COLORS[loc.zoning_type] || ZONING_COLORS.residential
-        const isActive = loc.id === activeId
+  useEffect(() => {
+    const map = mapInstanceRef.current
+    const container = mapRef.current
+    if (!isMapUsable(map) || !container) return
 
-        L.circle([loc.lat, loc.lng], {
-          pane: 'zoningPane',
-          radius: getZoneRadius(score),
-          color: withAlpha(color, isActive ? 0.82 : 0.48),
-          weight: isActive ? 2 : 1,
-          opacity: isActive ? 0.95 : 0.55,
-          fillColor: color,
-          fillOpacity: getZoneFillOpacity(score, isActive),
-          className: `zone-halo${isActive ? ' active' : ''}`,
-        }).addTo(layer)
-          .bindTooltip(`${loc.name} · ${(loc.zoning_type || 'unclassified').replace('_', ' ')} · ${Math.round(score)}`, { sticky: true, className: 'custom-tooltip' })
-          .on('click', () => onSelect(loc.id))
+    const invalidate = () => {
+      if (resizeFrameRef.current) {
+        cancelAnimationFrame(resizeFrameRef.current)
+      }
+
+      resizeFrameRef.current = requestAnimationFrame(() => {
+        const currentMap = mapInstanceRef.current
+        if (isMapUsable(currentMap)) {
+          currentMap.invalidateSize({ pan: false, debounceMoveend: true })
+        }
       })
-
-      zoningLayerRef.current = layer
-      layer.addTo(map)
     }
-  }, [locations, rankingById, sortBy, zoningActive, onSelect, activeId])
 
-  // Update marker styles from rankings and zoom
-  useEffect(() => {
-    rankings.forEach(r => {
-      const marker = markersRef.current[r.location_id]
-      if (!marker) return
-      const score = r[sortBy]
-      const color = score >= 70 ? '#00d2a0' : score >= 40 ? '#ffb347' : '#ff6b6b'
-      const isActive = r.location_id === activeId
+    invalidate()
 
-      // If zoning is active, we make markers smaller so they don't block the "plan"
-      const effectiveZoom = zoningActive ? zoom - 1 : zoom
-      marker.setIcon(createMarkerIcon(color, score, isActive, effectiveZoom))
-      marker.setZIndexOffset(isActive ? 1000 : 0)
-      marker.setOpacity(heatmapActive ? 0 : 1)
-    })
-  }, [rankings, sortBy, activeId, zoom, zoningActive, heatmapActive])
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(() => invalidate())
+      observer.observe(container)
+      resizeObserverRef.current = observer
+    }
 
-  // Update heatmap automatically
-  useEffect(() => {
-    const map = mapInstanceRef.current
-    if (!map) return
+    window.addEventListener('resize', invalidate)
 
-    const showHeat = heatmapActive || (zoom <= 11 && !zoningActive)
-
-    if (showHeat) {
-      if (heatLayerRef.current) map.removeLayer(heatLayerRef.current)
-      const points = rankings.map(r => {
-        const loc = locations[r.location_id]
-        if (!loc) return null
-        return [loc.lat, loc.lng, (r[sortBy] || 50) / 100]
-      }).filter(Boolean)
-
-      heatLayerRef.current = L.heatLayer(points, {
-        radius: zoom <= 11 ? 25 : 35,
-        blur: zoom <= 11 ? 15 : 20,
-        maxZoom: 17,
-        gradient: { 0.2: '#ff6b6b', 0.5: '#ffb347', 0.8: '#00d2a0', 1: '#00ffcc' },
-      }).addTo(map)
-    } else {
-      if (heatLayerRef.current) {
-        map.removeLayer(heatLayerRef.current)
-        heatLayerRef.current = null
+    return () => {
+      window.removeEventListener('resize', invalidate)
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect()
+        resizeObserverRef.current = null
+      }
+      if (resizeFrameRef.current) {
+        cancelAnimationFrame(resizeFrameRef.current)
+        resizeFrameRef.current = null
       }
     }
-  }, [rankings, locations, sortBy, heatmapActive, zoom, zoningActive])
+  }, [])
 
-  // Catchment: Pan to active location + show real infrastructure within radius
   useEffect(() => {
-    const map = mapInstanceRef.current
-    if (!map || !activeId) return
-    const loc = locations[activeId]
-    if (loc?.lat == null || loc?.lng == null) return
+    let cancelled = false
 
-    map.flyTo([loc.lat, loc.lng], Math.max(map.getZoom(), 14), { duration: 1.2 })
-
-    // Clear old catchment layers
-    if (catchmentRef.current) map.removeLayer(catchmentRef.current)
-    if (catchmentInfraRef.current) map.removeLayer(catchmentInfraRef.current)
-    if (connectionLinesRef.current) map.removeLayer(connectionLinesRef.current)
-
-    // Draw catchment circle
-    catchmentRef.current = L.circle([loc.lat, loc.lng], {
-      radius: CATCHMENT_RADIUS_M,
-      color: '#6c5ce7',
-      fillColor: '#6c5ce7',
-      fillOpacity: 0.06,
-      weight: 2,
-      dashArray: '8,6',
-    }).addTo(map)
-
-    // Fetch nearby infra and show on map
-    const cached = nearbyCacheRef.current[activeId]
-    if (cached) {
-      renderCatchmentInfra(map, loc, cached)
-    } else {
-      fetchNearbyInfra(activeId, CATCHMENT_RADIUS_KM)
-        .then(data => {
-          nearbyCacheRef.current[activeId] = data
-          renderCatchmentInfra(map, loc, data)
-        })
-        .catch(console.error)
-    }
-  }, [activeId, locations])
-
-  // Render infrastructure pins + connection lines inside catchment
-  function renderCatchmentInfra(map, loc, infraList) {
-    if (catchmentInfraRef.current) map.removeLayer(catchmentInfraRef.current)
-    if (connectionLinesRef.current) map.removeLayer(connectionLinesRef.current)
-
-    const infraGroup = L.layerGroup()
-    const linesGroup = L.layerGroup()
-
-    // Aggregate stats by type
-    const stats = {}
-
-    infraList.forEach(item => {
-      if (item.lat == null || item.lng == null) return
-      const cfg = INFRA_CONFIG[item.infra_type] || { icon: '?', color: '#888', label: item.infra_type }
-
-      // Count by type
-      if (!stats[item.infra_type]) stats[item.infra_type] = { count: 0, nearest: item.distance_km, label: cfg.label, color: cfg.color }
-      stats[item.infra_type].count++
-      stats[item.infra_type].nearest = Math.min(stats[item.infra_type].nearest, item.distance_km)
-
-      // Infrastructure marker
-      const icon = L.divIcon({
-        className: '',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
-        html: `<div class="infra-marker catchment-infra" style="width:20px;height:20px;background:${cfg.color};border:1px solid ${cfg.color}88;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff">${cfg.icon}</div>`,
+    fetchInfrastructure()
+      .then((rows) => {
+        if (!cancelled) {
+          setInfrastructure(rows.filter((item) => item.lat !== null && item.lng !== null))
+          setInfrastructureError('')
+        }
       })
-      L.marker([item.lat, item.lng], { icon })
-        .addTo(infraGroup)
-        .bindPopup(`<strong>${item.name}</strong><br><span style="opacity:0.7">${cfg.label} &middot; ${item.distance_km} km &middot; ${(item.status || '').replace('_', ' ')}</span>`)
+      .catch((error) => {
+        console.error(error)
+        if (!cancelled) setInfrastructureError('Infrastructure overlay is unavailable.')
+      })
 
-      // Connection line (faded, dashed)
-      const lineOpacity = Math.max(0.08, 0.4 - (item.distance_km / CATCHMENT_RADIUS_KM) * 0.35)
-      L.polyline([[loc.lat, loc.lng], [item.lat, item.lng]], {
-        color: cfg.color,
-        weight: 1.5,
-        opacity: lineOpacity,
-        dashArray: '4,4',
-      }).addTo(linesGroup)
-    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
-    catchmentInfraRef.current = infraGroup
-    connectionLinesRef.current = linesGroup
-    linesGroup.addTo(map)
-    infraGroup.addTo(map)
-
-    setCatchmentStats(stats)
-  }
-
-  // Clear catchment stats when no active location
   useEffect(() => {
-    if (!activeId) setCatchmentStats(null)
+    if (!activeId) {
+      setNearbyInfrastructure([])
+      return
+    }
+
+    let cancelled = false
+
+    fetchNearbyInfra(activeId, 6)
+      .then((rows) => {
+        if (!cancelled) setNearbyInfrastructure(rows)
+      })
+      .catch((error) => {
+        console.error(error)
+        if (!cancelled) setNearbyInfrastructure([])
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [activeId])
 
-  const toggleHeatmap = useCallback(() => setHeatmapActive(prev => !prev), [])
-  const toggleZoning = useCallback(() => setZoningActive(prev => !prev), [])
-
-  const toggleInfraPanel = useCallback(async () => {
-    setInfraPanelOpen(prev => !prev)
-    if (!infraCacheRef.current) {
-      try {
-        const d = await fetchInfrastructure()
-        infraCacheRef.current = d
-        setInfraData(d)
-      } catch (e) { console.error(e) }
-    }
-  }, [])
-
-  const toggleInfraType = useCallback((type) => {
+  useEffect(() => {
     const map = mapInstanceRef.current
-    if (!map) return
-    setInfraVisible(prev => {
-      const next = { ...prev, [type]: !prev[type] }
-      if (next[type]) {
-        const layer = L.layerGroup()
-        const cfg = INFRA_CONFIG[type] || { icon: '?', color: '#888' }
-        infraData.filter(i => i.infra_type === type).forEach(i => {
-          if (i.lat == null || i.lng == null) return
-          const icon = L.divIcon({
-            className: '',
-            iconSize: [22, 22],
-            iconAnchor: [11, 11],
-            html: `<div class="infra-marker" style="width:22px;height:22px;background:${cfg.color};border:1px solid ${cfg.color};border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff">${cfg.icon}</div>`,
-          })
-          L.marker([i.lat, i.lng], { icon }).addTo(layer)
-            .bindPopup(`<strong>${i.name}</strong><br><span style="color:var(--text-dim)">${i.infra_type} &middot; ${(i.status || '').replace('_', ' ')}</span>`)
-        })
-        infraLayersRef.current[type] = layer
-        layer.addTo(map)
-      } else {
-        if (infraLayersRef.current[type]) { map.removeLayer(infraLayersRef.current[type]); delete infraLayersRef.current[type] }
-      }
-      return next
-    })
-  }, [infraData])
+    const layer = locationLayerRef.current
+    if (!isMapUsable(map) || !layer) return
 
-  // Compute score breakdown for the catchment stats badge
-  const catchmentSummary = useMemo(() => {
-    if (!catchmentStats) return null
-    const total = Object.values(catchmentStats).reduce((sum, s) => sum + s.count, 0)
-    return { total, byType: catchmentStats }
-  }, [catchmentStats])
+    layer.clearLayers()
+    const bounds = []
+
+    mappedLocations.forEach((location) => {
+      const ranking = rankingById[location.id]
+      const score = ranking?.[sortBy] ?? 0
+      const latLng = toLatLng(location)
+      if (!latLng) return
+
+      const marker = L.marker(
+        latLng,
+        {
+          icon: createLocationMarker({
+            score,
+            zoning: location.zoning_type,
+            active: location.id === activeId,
+            compared: compareIds.includes(location.id),
+          }),
+        },
+      )
+
+      marker.on('click', () => onSelect(location.id))
+      marker.bindTooltip(
+        `
+          <strong>${locationLabel(location)}</strong><br />
+          ${formatLabel(location.zoning_type)} zone<br />
+          ${sortBy.replaceAll('_', ' ')}: ${Math.round(score)}
+        `,
+      )
+      marker.addTo(layer)
+      bounds.push(latLng)
+    })
+
+    if (!hasFitBoundsRef.current && bounds.length === 1) {
+      map.setView(bounds[0], 10, { animate: false })
+      hasFitBoundsRef.current = true
+    } else if (!hasFitBoundsRef.current && bounds.length > 1) {
+      map.fitBounds(bounds, { padding: [36, 36], animate: false, maxZoom: 11 })
+      hasFitBoundsRef.current = true
+    }
+  }, [mappedLocations, rankingById, sortBy, activeId, compareIds, onSelect])
+
+  useEffect(() => {
+    const map = mapInstanceRef.current
+    const latLng = toLatLng(activeLocation)
+    if (!isMapUsable(map) || !latLng) return
+    map.flyTo(latLng, 11, { duration: 0.8 })
+  }, [activeLocation])
+
+  useEffect(() => {
+    const map = mapInstanceRef.current
+    const layer = infrastructureLayerRef.current
+    if (!isMapUsable(map) || !layer) return
+
+    layer.clearLayers()
+
+    if (!infrastructureActive) return
+
+    infrastructure.forEach((item) => {
+      const latLng = toLatLng(item)
+      if (!latLng) return
+
+      const config = INFRA_CONFIG[item.infra_type] || {
+        icon: 'I',
+        color: '#94a3b8',
+        label: formatLabel(item.infra_type),
+      }
+
+      const marker = L.circleMarker(latLng, {
+        radius: 5,
+        color: config.color,
+        weight: 1,
+        fillColor: config.color,
+        fillOpacity: 0.88,
+      })
+
+      marker.bindTooltip(
+        `
+          <strong>${item.name}</strong><br />
+          ${config.label}<br />
+          ${formatLabel(item.status)}
+        `,
+      )
+
+      marker.addTo(layer)
+    })
+  }, [infrastructure, infrastructureActive])
+
+  useEffect(() => {
+    const map = mapInstanceRef.current
+    if (!isMapUsable(map)) return
+
+    if (heatLayerRef.current) {
+      if (map.hasLayer(heatLayerRef.current)) {
+        map.removeLayer(heatLayerRef.current)
+      }
+      heatLayerRef.current = null
+    }
+
+    if (!heatmapActive) return
+
+    const points = rankings
+      .map((row) => {
+        const location = locations[row.location_id]
+        const latLng = toLatLng(location)
+        if (!latLng) return null
+        return [...latLng, Math.max((row[sortBy] || 0) / 100, 0.2)]
+      })
+      .filter(Boolean)
+
+    if (points.length === 0) return
+
+    heatLayerRef.current = L.heatLayer(points, {
+      radius: 28,
+      blur: 22,
+      maxZoom: 11,
+      gradient: {
+        0.15: '#164e63',
+        0.4: '#0ea5e9',
+        0.65: '#22c55e',
+        0.85: '#f59e0b',
+        1: '#ef4444',
+      },
+    }).addTo(map)
+  }, [heatmapActive, locations, rankings, sortBy])
+
+  useEffect(() => {
+    const map = mapInstanceRef.current
+    if (!isMapUsable(map)) return
+
+    const frame = requestAnimationFrame(() => {
+      const currentMap = mapInstanceRef.current
+      if (isMapUsable(currentMap)) {
+        currentMap.invalidateSize({ pan: false, debounceMoveend: true })
+      }
+    })
+
+    return () => cancelAnimationFrame(frame)
+  }, [mappedLocations.length, activeId, compareIds.length, infrastructureActive, heatmapActive])
 
   return (
-    <main className="map-container">
-      <div ref={mapRef} id="map" />
+    <div className={`map-view theme-${theme} basemap-${basemapMode}`}>
+      <div ref={mapRef} className="map-element" />
 
-      <div className="map-controls">
-        <button className={`map-ctrl-btn ${zoningActive ? 'active' : ''}`} onClick={toggleZoning}>
-          Zoning Map
+      <div className="map-overlay top-left glass">
+        <p className="overlay-label">Selected lens</p>
+        <h3>{formatLabel(sortBy)}</h3>
+        <p className="overlay-copy">Scores update live with the active lens.</p>
+      </div>
+
+      <div className="map-overlay-controls glass">
+        <button
+          className={`control-btn ${infrastructureActive ? 'active' : ''}`}
+          onClick={() => setInfrastructureActive((current) => !current)}
+          title="Toggle infrastructure"
+        >
+          <Network size={18} />
+          <span>Infra</span>
         </button>
-        <button className={`map-ctrl-btn ${heatmapActive ? 'active' : ''}`} onClick={toggleHeatmap}>
-          Heatmap
+        <button
+          className={`control-btn ${heatmapActive ? 'active' : ''}`}
+          onClick={() => setHeatmapActive((current) => !current)}
+          title="Toggle heatmap"
+        >
+          <Activity size={18} />
+          <span>Heat</span>
         </button>
-        <button className={`map-ctrl-btn ${infraPanelOpen ? 'active' : ''}`} onClick={toggleInfraPanel}>
-          Infrastructure
+        <button
+          className={`control-btn ${compareMode ? 'active' : ''}`}
+          onClick={onToggleCompareMode}
+          title="Toggle compare mode"
+        >
+          <GitCompareArrows size={18} />
+          <span>Compare</span>
         </button>
-        <button className={`map-ctrl-btn ${compareMode ? 'active' : ''}`} onClick={onToggleCompare}>
-          Compare
+        <button
+          className="control-btn"
+          onClick={() => {
+            const map = mapInstanceRef.current
+            if (isMapUsable(map)) {
+              map.setView(INDIA_CENTER, INDIA_ZOOM, { animate: false })
+            }
+          }}
+          title="Reset map"
+        >
+          <LocateFixed size={18} />
+          <span>India</span>
         </button>
       </div>
 
-      {infraPanelOpen && (
-        <div className="infra-layer-panel visible">
-          <div className="il-title">Infrastructure Layers</div>
-          {Object.entries(INFRA_CONFIG).map(([type, cfg]) => (
-            <div key={type} className={`infra-toggle ${infraVisible[type] ? 'on' : ''}`} onClick={() => toggleInfraType(type)}>
-              <div className="it-icon" style={infraVisible[type] ? { background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff' } : {}}>{cfg.icon}</div>
-              {cfg.label}
+      <div className="map-overlay bottom-left glass">
+        <div className="overlay-section-title">
+          <Layers3 size={16} />
+          <span>Infrastructure coverage</span>
+        </div>
+        {infrastructureError ? <p className="overlay-muted">{infrastructureError}</p> : null}
+        <div className="infra-grid">
+          {Object.entries(INFRA_CONFIG).map(([key, config]) => (
+            <div key={key} className="infra-chip">
+              <span className="infra-dot" style={{ backgroundColor: config.color }} />
+              <span>{config.label}</span>
+              <strong>{infrastructureCounts[key] || 0}</strong>
             </div>
           ))}
         </div>
-      )}
-
-      {/* Catchment Stats Panel — shows when a location is selected */}
-      {catchmentSummary && activeId && (
-        <div className="catchment-panel">
-          <div className="catchment-title">
-            Catchment ({CATCHMENT_RADIUS_KM} km)
-            <span className="catchment-total">{catchmentSummary.total} infra</span>
-          </div>
-          <div className="catchment-grid">
-            {Object.entries(catchmentSummary.byType).map(([type, data]) => (
-              <div key={type} className="catchment-row">
-                <span className="catchment-dot" style={{ background: data.color }} />
-                <span className="catchment-label">{data.label}</span>
-                <span className="catchment-count">{data.count}</span>
-                <span className="catchment-dist">{data.nearest.toFixed(1)} km</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {compareMode && (
-        <div className="compare-bar visible">
-          <span>Compare:</span>
-          <div className="compare-chips">
-            {compareIds.map(id => (
-              <div key={id} className="compare-chip">{locations[id]?.name || id}
-                <span className="remove-chip" onClick={() => onRemoveCompare(id)}>&times;</span>
-              </div>
-            ))}
-          </div>
-          {compareIds.length >= 2 && <button className="compare-go-btn" onClick={onRunCompare}>Compare</button>}
-        </div>
-      )}
-
-      <div className="map-legend">
-        <div className="legend-title">Zoning & Value</div>
-        {zoningActive && (
-          <div className="legend-section">
-            <div className="legend-item"><div className="legend-dot square" style={{ background: ZONING_COLORS.residential }} /> Resid.</div>
-            <div className="legend-item"><div className="legend-dot square" style={{ background: ZONING_COLORS.commercial }} /> Comm.</div>
-            <div className="legend-item"><div className="legend-dot square" style={{ background: ZONING_COLORS.mixed }} /> Mixed</div>
-            <div className="legend-item"><div className="legend-dot square" style={{ background: ZONING_COLORS.industrial }} /> Indust.</div>
-          </div>
-        )}
-        <div className="legend-divider" />
-        <div className="legend-section">
-          <div className="legend-item"><div className="legend-dot" style={{ background: '#00d2a0' }} /> High</div>
-          <div className="legend-item"><div className="legend-dot" style={{ background: '#ffb347' }} /> Mid</div>
-          <div className="legend-item"><div className="legend-dot" style={{ background: '#ff6b6b' }} /> Low</div>
-        </div>
       </div>
-    </main>
+
+      <div className="map-overlay bottom-right glass">
+        {activeLocation ? (
+          <>
+            <p className="overlay-label">Active market</p>
+            <h3>{locationLabel(activeLocation)}</h3>
+            <p className="overlay-copy">
+              {formatLabel(activeLocation.zoning_type)} zone
+              {activeLocation.city ? ` • ${activeLocation.city}` : ''}.
+            </p>
+            <div className="catchment-list">
+              {nearbyInfrastructure.slice(0, 4).map((item) => (
+                <div key={item.id} className="catchment-row">
+                  <span>{item.name}</span>
+                  <strong>{formatDistance(item.distance_km)}</strong>
+                </div>
+              ))}
+              {nearbyInfrastructure.length === 0 ? (
+                <p className="overlay-muted">No nearby infrastructure was returned for this market.</p>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="overlay-label">Hotspot watchlist</p>
+            <h3>Emerging corridors</h3>
+            <div className="hotspot-stack">
+              {spotlightHotspots.map((hotspot) => (
+                <button
+                  key={hotspot.cluster_id}
+                  className="hotspot-card"
+                  onClick={() => {
+                    const firstLocation = hotspot.locations?.[0]
+                    if (firstLocation?.location_id) onSelect(firstLocation.location_id)
+                  }}
+                >
+                  <div>
+                    <strong>{formatLabel(hotspot.label)}</strong>
+                    <span>{hotspot.cluster_size} markets</span>
+                  </div>
+                  <b>{hotspot.hotspot_score.toFixed(0)}</b>
+                </button>
+              ))}
+              {spotlightHotspots.length === 0 ? (
+                <p className="overlay-muted">Hotspots will appear here.</p>
+              ) : null}
+            </div>
+          </>
+        )}
+      </div>
+
+      {compareIds.length > 0 ? (
+        <div className="compare-shelf glass">
+          <div className="compare-tags">
+            {compareNames.map((name) => (
+              <span key={name} className="compare-tag">{name}</span>
+            ))}
+          </div>
+          <button className="run-compare-btn" disabled={compareIds.length < 2} onClick={onRunCompare}>
+            Run compare
+          </button>
+        </div>
+      ) : null}
+    </div>
   )
 }

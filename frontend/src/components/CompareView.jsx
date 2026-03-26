@@ -1,9 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
+  AlertTriangle,
+  BarChart3,
+  GitCompareArrows,
+  Sparkles,
+  Trophy,
+} from 'lucide-react'
+import {
+  CategoryScale,
   Chart as ChartJS,
   Filler,
   Legend,
   LineElement,
+  LinearScale,
   PointElement,
   RadarController,
   RadialLinearScale,
@@ -11,94 +20,86 @@ import {
 } from 'chart.js'
 import { Radar } from 'react-chartjs-2'
 import { fetchAICompare, fetchCompare } from '../api'
-import { scoreColor } from '../utils'
+import { compactText, formatLabel, locationLabel, scoreColor } from '../utils'
 import './CompareView.css'
 
-ChartJS.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
+ChartJS.register(
+  RadarController,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+  Legend,
+)
 
-function toNumber(value) {
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : 0
+const COLORS = ['#17b897', '#f59e0b', '#3b82f6']
+
+const METRIC_DEFINITIONS = [
+  { key: 'land_value_score', label: 'Land Value' },
+  { key: 'development_potential_score', label: 'Development Potential' },
+  { key: 'future_appreciation_index', label: 'Future Appreciation' },
+  { key: 'infra_score', label: 'Infrastructure' },
+  { key: 'price_trend_score', label: 'Price Trend' },
+  { key: 'density_score', label: 'Density' },
+]
+
+function metricValue(row, key) {
+  if (key in row) return row[key]
+  return row.components?.[key] ?? 0
 }
 
-export default function CompareView({ compareIds, locations, isActive }) {
-  const [data, setData] = useState(null)
+export default function CompareView({ compareIds, locations }) {
+  const [comparison, setComparison] = useState([])
+  const [aiSummary, setAiSummary] = useState(null)
   const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
-  const [insight, setInsight] = useState(null)
-  const [insightLoading, setInsightLoading] = useState(false)
-  const [insightError, setInsightError] = useState('')
-  const radarChartRef = useRef(null)
+  const compareNames = useMemo(
+    () => compareIds.map((id) => locationLabel(locations[id], '')).filter(Boolean),
+    [compareIds, locations],
+  )
 
   useEffect(() => {
-    let cancelled = false
-
     if (compareIds.length < 2) {
-      setData(null)
-      setLoading(false)
+      setComparison([])
+      setAiSummary(null)
       setLoadError('')
-      setInsight(null)
-      setInsightError('')
-      setInsightLoading(false)
-      return () => {
-        cancelled = true
-      }
+      setLoading(false)
+      return
     }
 
+    let cancelled = false
     setLoading(true)
     setLoadError('')
-    setInsight(null)
-    setInsightError('')
 
-    fetchCompare(compareIds)
-      .then((response) => {
+    Promise.allSettled([
+      fetchCompare(compareIds),
+      fetchAICompare(compareIds),
+    ])
+      .then(([comparisonResult, aiResult]) => {
         if (cancelled) return
-        setData(response)
-      })
-      .catch((error) => {
-        console.error(error)
-        if (cancelled) return
-        setLoadError('Comparison data could not be loaded right now.')
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false)
+
+        if (comparisonResult.status === 'fulfilled') {
+          setComparison(comparisonResult.value)
+        } else {
+          setComparison([])
+          setLoadError('Comparison data could not be loaded.')
         }
-      })
 
-    return () => {
-      cancelled = true
-    }
-  }, [compareIds])
-
-  useEffect(() => {
-    let cancelled = false
-
-    if (compareIds.length < 2) {
-      return () => {
-        cancelled = true
-      }
-    }
-
-    setInsightLoading(true)
-    setInsightError('')
-
-    fetchAICompare(compareIds)
-      .then((response) => {
-        if (!cancelled) {
-          setInsight(response)
+        if (aiResult.status === 'fulfilled') {
+          setAiSummary(aiResult.value)
+        } else {
+          setAiSummary(null)
         }
       })
       .catch((error) => {
         console.error(error)
-        if (!cancelled) {
-          setInsightError('AI compare verdict is unavailable right now.')
-        }
+        if (!cancelled) setLoadError('Comparison data could not be loaded.')
       })
       .finally(() => {
-        if (!cancelled) {
-          setInsightLoading(false)
-        }
+        if (!cancelled) setLoading(false)
       })
 
     return () => {
@@ -107,156 +108,183 @@ export default function CompareView({ compareIds, locations, isActive }) {
   }, [compareIds])
 
   const chartData = useMemo(() => {
-    if (!data?.length) return null
-
-    const colors = ['#6c5ce7', '#00d2a0', '#ffb347']
+    if (!comparison.length) return null
 
     return {
-      labels: ['Land Value', 'Dev Potential', 'Future Appr.'],
-      datasets: data.map((score, index) => ({
-        label: score.location || `Location ${index + 1}`,
-        data: [
-          toNumber(score.land_value_score),
-          toNumber(score.development_potential_score),
-          toNumber(score.future_appreciation_index),
-        ],
-        backgroundColor: `${colors[index] ?? '#7c86ff'}22`,
-        borderColor: colors[index] ?? '#7c86ff',
+      labels: METRIC_DEFINITIONS.map((item) => item.label),
+      datasets: comparison.map((row, index) => ({
+        label: row.location,
+        data: METRIC_DEFINITIONS.map((metric) => metricValue(row, metric.key)),
+        backgroundColor: `${COLORS[index]}20`,
+        borderColor: COLORS[index],
+        pointBackgroundColor: COLORS[index],
         borderWidth: 2,
-        pointBackgroundColor: colors[index] ?? '#7c86ff',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 1,
-        pointRadius: 3,
       })),
     }
-  }, [data])
+  }, [comparison])
 
-  const chartOptions = useMemo(() => ({
+  const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    resizeDelay: 120,
-    plugins: {
-      legend: {
-        labels: {
-          color: '#9b9fbc',
-          font: { size: 10, weight: '600' },
-          boxWidth: 10,
-          boxHeight: 10,
-        },
-      },
-    },
     scales: {
       r: {
         beginAtZero: true,
         max: 100,
-        ticks: {
-          color: '#6f728f',
-          backdropColor: 'transparent',
-          font: { size: 9 },
-        },
-        grid: { color: '#2a2a3a' },
-        angleLines: { color: '#2a2a3a' },
+        grid: { color: 'rgba(148, 163, 184, 0.2)' },
+        angleLines: { color: 'rgba(148, 163, 184, 0.16)' },
         pointLabels: {
-          color: '#9b9fbc',
-          font: { size: 10, weight: '600' },
+          color: '#94a3b8',
+          font: { family: 'Montserrat', size: 10, weight: '600' },
+        },
+        ticks: { display: false },
+      },
+    },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: '#94a3b8',
+          font: { family: 'Montserrat', size: 11, weight: '600' },
+          usePointStyle: true,
+          boxWidth: 8,
         },
       },
     },
-  }), [])
+  }
 
-  useEffect(() => {
-    if (!isActive) return
+  const leaderboard = useMemo(() => {
+    if (!comparison.length) return []
 
-    const frameId = requestAnimationFrame(() => {
-      radarChartRef.current?.resize()
+    return METRIC_DEFINITIONS.map((metric) => {
+      const winner = [...comparison].sort((left, right) => metricValue(right, metric.key) - metricValue(left, metric.key))[0]
+      return {
+        label: metric.label,
+        winner: winner.location,
+        value: metricValue(winner, metric.key),
+      }
     })
-
-    return () => cancelAnimationFrame(frameId)
-  }, [chartData, compareIds, isActive])
+  }, [comparison])
 
   if (compareIds.length < 2) {
-    return <div className="detail-empty">Select 2-3 locations using the Compare button on the map, then click Compare.</div>
+    return (
+      <div className="compare-empty">
+        <GitCompareArrows size={36} />
+        <h3>Build a comparison set</h3>
+        <p>Pick 2-3 markets.</p>
+        <div className="compare-selected-list">
+          {compareIds.map((id) => (
+            <span key={id} className="selected-pill">{locationLabel(locations[id], `Market ${id}`)}</span>
+          ))}
+        </div>
+      </div>
+    )
   }
 
-  if (loading) {
-    return <div className="detail-loading"><span className="spinner" /> Comparing locations...</div>
-  }
-
-  if (loadError) {
-    return <div className="detail-loading detail-error">{loadError}</div>
-  }
-
-  if (!data) return null
-
-  const scoreKeys = [
-    { key: 'land_value_score', label: 'Land Val' },
-    { key: 'development_potential_score', label: 'Dev Pot' },
-    { key: 'future_appreciation_index', label: 'Fut Appr' },
-  ]
+  if (loading) return <div className="panel-loading"><span className="spinner" /></div>
+  if (loadError) return <div className="panel-error"><AlertTriangle size={22} /><p>{loadError}</p></div>
 
   return (
-    <div className="compare-scroll">
-      <div className="detail-section">
-        <h3>AI Verdict</h3>
-        {insightLoading && <div className="compare-ai-state"><span className="spinner" /> Building comparison brief...</div>}
-        {!insightLoading && insightError && <div className="compare-ai-state compare-ai-error">{insightError}</div>}
-        {!insightLoading && insight && (
-          <div className="compare-ai-shell">
-            <div className="compare-ai-summary">{insight.summary}</div>
-            <div className="compare-ai-grid">
-              {insight.verdicts.map((item) => (
-                <div key={`${item.label}-${item.value}`} className={`compare-ai-card tone-${item.tone}`}>
-                  <div className="compare-ai-label">{item.label}</div>
-                  <div className="compare-ai-value">{item.value}</div>
+    <div className="compare-container">
+      <section className="compare-hero">
+        <div>
+          <p className="eyebrow">Comparison cockpit</p>
+          <h3>{compareNames.join(' vs ') || 'Selected markets'}</h3>
+          <p>{compactText(aiSummary?.summary, 'Score, momentum, infrastructure, and density side by side.', 100)}</p>
+        </div>
+
+        {aiSummary?.winner_location_name ? (
+          <div className="winner-card">
+            <Trophy size={18} />
+            <div>
+              <span>AI leader</span>
+              <strong>{aiSummary.winner_location_name}</strong>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="compare-grid">
+        <article className="compare-section">
+          <div className="section-heading">
+            <BarChart3 size={18} />
+            <h4>Score radar</h4>
+          </div>
+          <div className="compare-chart-box">
+            {chartData ? <Radar data={chartData} options={chartOptions} /> : <p className="muted-copy">Chart data is unavailable.</p>}
+          </div>
+        </article>
+
+        <article className="compare-section ai-verdict">
+          <div className="section-heading">
+            <Sparkles size={18} />
+            <h4>AI verdict</h4>
+          </div>
+          {aiSummary ? (
+            <>
+              <p className="section-copy">{compactText(aiSummary.summary, '', 118)}</p>
+              <div className="verdict-grid">
+                {aiSummary.verdicts?.map((verdict) => (
+                  <article key={`${verdict.label}-${verdict.value}`} className={`verdict-card tone-${verdict.tone}`}>
+                    <span>{verdict.label}</span>
+                    <strong>{verdict.value}</strong>
+                  </article>
+                ))}
+              </div>
+              {aiSummary.recommended_questions?.length ? (
+                <div className="question-strip">
+                  {aiSummary.recommended_questions.slice(0, 3).map((question) => (
+                    <span key={question} className="question-chip">{question}</span>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <p className="muted-copy">AI comparison commentary is unavailable, but structured score comparisons still work.</p>
+          )}
+        </article>
+      </section>
+
+      <section className="compare-section">
+        <div className="section-heading">
+          <Trophy size={18} />
+          <h4>Metric leaders</h4>
+        </div>
+        <div className="leader-grid">
+          {leaderboard.map((item) => (
+            <article key={item.label} className="leader-card">
+              <span>{item.label}</span>
+              <strong>{item.winner}</strong>
+              <b>{item.value.toFixed(0)}</b>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="compare-table">
+        {comparison.map((row) => (
+          <article key={row.location_id} className="compare-row-card">
+            <header>
+              <div>
+                <h4>{row.location}</h4>
+                <span>{formatLabel(locations[row.location_id]?.zoning_type)}</span>
+              </div>
+              <b style={{ color: scoreColor(row.land_value_score) }}>{row.land_value_score.toFixed(0)}</b>
+            </header>
+
+            <div className="metric-list">
+              {METRIC_DEFINITIONS.map((metric) => (
+                <div key={metric.key} className="metric-line">
+                  <span>{metric.label}</span>
+                  <div className="metric-bar">
+                    <div className="metric-fill" style={{ width: `${metricValue(row, metric.key)}%` }} />
+                  </div>
+                  <strong>{metricValue(row, metric.key).toFixed(0)}</strong>
                 </div>
               ))}
             </div>
-            {!!insight.recommended_questions?.length && (
-              <div className="compare-ai-questions">
-                {insight.recommended_questions.map((item) => (
-                  <div key={item} className="compare-ai-question">{item}</div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="detail-section">
-        <h3>Score Comparison</h3>
-        {chartData && (
-          <div className="compare-chart-shell">
-            <Radar
-              key={`compare-${compareIds.join('-')}`}
-              ref={radarChartRef}
-              data={chartData}
-              options={chartOptions}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="detail-section">
-        {scoreKeys.map(({ key, label }) => (
-          <div key={key} className="compare-group">
-            {data.map((score) => {
-              const value = toNumber(score[key])
-              const color = scoreColor(value)
-
-              return (
-                <div key={`${score.location_id}-${key}`} className="compare-score-row">
-                  <span className="cs-label cs-location">{score.location || `Location ${score.location_id}`}</span>
-                  <span className="cs-label cs-metric">{label}</span>
-                  <div className="cs-bar">
-                    <div className="cs-fill" style={{ width: `${Math.max(0, Math.min(value, 100))}%`, background: color }} />
-                  </div>
-                  <span className="cs-val" style={{ color }}>{value.toFixed(0)}</span>
-                </div>
-              )
-            })}
-          </div>
+          </article>
         ))}
-      </div>
+      </section>
     </div>
   )
 }

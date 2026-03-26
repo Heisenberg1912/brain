@@ -620,6 +620,58 @@ def transfer_plan(session: Session, plan_id: int, payload: dict[str, Any]) -> di
     }
 
 
+def mint_plan(session: Session, plan_id: int, wallet: str) -> ArchitecturalPlan:
+    """Mints an architectural plan as an NFT (Mock implementation)."""
+    plan = get_plan(session, plan_id)
+    if not plan:
+        raise ValueError(f"Plan {plan_id} not found")
+    if plan.asset_status == "minted":
+        raise ValueError("Plan is already minted")
+    
+    # Mocking on-chain transaction
+    tx_hash = f"0xmock_mint_{plan_id}_{datetime.now(timezone.utc).timestamp()}"
+    token_id = str(1000 + plan_id)
+    
+    return record_mint(
+        session, 
+        plan_id, 
+        {
+            "chain": DEFAULT_CHAIN,
+            "contract_address": "0xBuiltAtticPlanRegistryMockAddress",
+            "token_id": token_id,
+            "tx_hash": tx_hash,
+            "minted_by_wallet": wallet
+        }
+    )
+
+
+def tokenize_property_on_chain(session: Session, property_id: int, wallet: str) -> TokenizedProperty:
+    """Tokenizes a property on-chain (Mock implementation)."""
+    prop = get_tokenized_property(session, property_id)
+    if not prop:
+        raise ValueError(f"Property {property_id} not found")
+    
+    # Mocking on-chain transaction
+    tx_hash = f"0xmock_tokenize_{property_id}_{datetime.now(timezone.utc).timestamp()}"
+    
+    prop.status = "active"
+    prop.tokenization_tx_hash = tx_hash
+    prop.contract_address = "0xBuiltAtticProperty1155MockAddress"
+    prop.token_standard = "ERC-1155"
+    prop.token_symbol = "BATTIC"
+    
+    session.add(PropertyLedgerEvent(
+        property_id=property_id,
+        event_type="on_chain_tokenization",
+        actor_wallet=wallet,
+        tx_hash=tx_hash,
+        chain=prop.chain,
+        event_metadata={"status": "active"}
+    ))
+    session.flush()
+    return prop
+
+
 def get_plan_licenses(session: Session, plan_id: int) -> list[PlanLicense]:
     return list(session.scalars(
         select(PlanLicense)

@@ -9,9 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/montserrat": "^5.2.8",
+    "@fontsource/source-serif-4": "^5.2.9",
     "chart.js": "^4.5.1",
+    "framer-motion": "^12.38.0",
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0",
+    "lucide-react": "^1.7.0",
     "react": "^19.2.4",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.4",
