@@ -11,5 +11,9 @@ class Base(DeclarativeBase):
     pass
 
 
-def get_session() -> Session:
-    return SessionLocal()
+def get_session():
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
