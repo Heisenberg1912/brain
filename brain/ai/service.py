@@ -231,11 +231,12 @@ def query(
         if location_context:
             context_blocks.append(f"## Active Location Context\n{location_context}")
 
+    joined_context = '\n\n'.join(context_blocks)
     prompt = f"""Answer the following question using the supplied structured intelligence context.
 
 Question: {user_query}
 
-{'\n\n'.join(context_blocks)}
+{joined_context}
 
 Focus on the best options and explain why with scores, forecast direction, and risk tradeoffs."""
 
