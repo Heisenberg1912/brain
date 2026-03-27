@@ -1,7 +1,7 @@
 """BuiltAttic Brain CLI — the primary interface to the intelligence engine."""
 import click
 
-from brain.database import get_session
+from brain.database import create_session
 
 
 @click.group()
@@ -44,9 +44,10 @@ def revision():
 def seed():
     """Load seed data into the database."""
     from brain.data_bank.seed import seed_all
-    session = get_session()
+    session = create_session()
     try:
         seed_all(session)
+        session.commit()
     except Exception as e:
         session.rollback()
         click.echo(f"Error: {e}", err=True)
@@ -67,7 +68,7 @@ def query():
 def locations():
     """List all locations."""
     from brain.data_bank.service import get_all_locations
-    session = get_session()
+    session = create_session()
     try:
         locs = get_all_locations(session)
         for loc in locs:
@@ -82,7 +83,7 @@ def locations():
 def intelligence(location_id):
     """Show the unified intelligence snapshot for a location."""
     from brain.data_bank.service import build_location_intelligence_record
-    session = get_session()
+    session = create_session()
     try:
         record = build_location_intelligence_record(session, location_id)
         session.commit()
@@ -112,7 +113,7 @@ def intelligence(location_id):
 def nearby(lat, lng, radius):
     """Find locations near a point."""
     from brain.data_bank.service import find_nearby_locations
-    session = get_session()
+    session = create_session()
     try:
         results = find_nearby_locations(session, lat, lng, radius)
         if not results:
@@ -131,7 +132,7 @@ def nearby(lat, lng, radius):
 def summary(location_id):
     """Show full summary for a location."""
     from brain.data_bank.service import get_location_summary
-    session = get_session()
+    session = create_session()
     try:
         s = get_location_summary(session, location_id)
         if not s:
@@ -188,7 +189,7 @@ def summary(location_id):
 def score(location_id):
     """Score a specific location."""
     from brain.valuation.service import score_location
-    session = get_session()
+    session = create_session()
     try:
         result = score_location(session, location_id)
         session.commit()
@@ -222,7 +223,7 @@ def score(location_id):
 def rankings(top, sort_by):
     """Show top locations by score."""
     from brain.valuation.service import score_all_locations, get_rankings
-    session = get_session()
+    session = create_session()
     try:
         # Ensure scores exist
         score_all_locations(session)
@@ -251,7 +252,7 @@ def rankings(top, sort_by):
 def ingest(source, path):
     """Ingest data from external sources into the data bank."""
     from brain.data_bank.ingestion import ingest_directory
-    session = get_session()
+    session = create_session()
     try:
         click.echo(f"\nIngesting from: {path} (source: {source})")
         results = ingest_directory(session, path)
@@ -278,7 +279,7 @@ def ingest_web(manifest):
     """Fetch web pages, use Gemini to extract structured records, and ingest them."""
     from brain.data_bank.ingestion.gemini_web_ingestor import GeminiWebIngestor
 
-    session = get_session()
+    session = create_session()
     try:
         click.echo(f"\nGemini web enrichment from: {manifest}")
         ingestor = GeminiWebIngestor(session)
@@ -318,7 +319,7 @@ def ml():
 def train():
     """Train the price prediction model."""
     from brain.valuation.ml.price_predictor import PricePredictor
-    session = get_session()
+    session = create_session()
     try:
         predictor = PricePredictor()
         result = predictor.train(session)
@@ -337,7 +338,7 @@ def train():
 def predict(location_id):
     """Predict future prices for a location."""
     from brain.valuation.ml.price_predictor import PricePredictor
-    session = get_session()
+    session = create_session()
     try:
         predictor = PricePredictor()
         pred = predictor.predict(session, location_id)
@@ -361,7 +362,7 @@ def hotspots():
     """Detect investment hotspot clusters."""
     from brain.valuation.ml.hotspot_detector import HotspotDetector
     from brain.valuation.service import score_all_locations
-    session = get_session()
+    session = create_session()
     try:
         # Ensure scores exist
         score_all_locations(session)
@@ -388,7 +389,7 @@ def hotspots():
 def ask(question):
     """Ask a natural language question about real estate data."""
     from brain.ai.service import query as ai_query
-    session = get_session()
+    session = create_session()
     try:
         click.echo("\nThinking...\n")
         answer = ai_query(session, question)
@@ -402,7 +403,7 @@ def ask(question):
 def analyze(location_id):
     """Deep AI analysis of a specific location."""
     from brain.ai.service import analyze_location
-    session = get_session()
+    session = create_session()
     try:
         click.echo("\nAnalyzing...\n")
         answer = analyze_location(session, location_id)
