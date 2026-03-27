@@ -17,3 +17,7 @@ def get_session():
         yield session
     finally:
         session.close()
+
+
+def create_session() -> Session:
+    return SessionLocal()
