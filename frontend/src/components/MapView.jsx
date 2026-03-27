@@ -168,7 +168,7 @@ export default function MapView({
       attributionControl: false,
       minZoom: 4,
       maxZoom: 17,
-      scrollWheelZoom: false,
+      scrollWheelZoom: true,
       preferCanvas: true,
     }).setView(INDIA_CENTER, INDIA_ZOOM)
 
