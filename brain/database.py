@@ -20,8 +20,3 @@ def session_context():
         yield session
     finally:
         session.close()
-
-
-def get_session():
-    with session_context() as session:
-        yield session
