@@ -1,7 +1,7 @@
 """BuiltAttic Brain CLI — the primary interface to the intelligence engine."""
 import click
 
-from brain.database import create_session
+from brain.database import session_context
 
 
 @click.group()
@@ -44,16 +44,14 @@ def revision():
 def seed():
     """Load seed data into the database."""
     from brain.data_bank.seed import seed_all
-    session = create_session()
-    try:
-        seed_all(session)
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        click.echo(f"Error: {e}", err=True)
-        raise
-    finally:
-        session.close()
+    with session_context() as session:
+        try:
+            seed_all(session)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            click.echo(f"Error: {e}", err=True)
+            raise
 
 
 # --- Query commands ---
@@ -68,14 +66,11 @@ def query():
 def locations():
     """List all locations."""
     from brain.data_bank.service import get_all_locations
-    session = create_session()
-    try:
+    with session_context() as session:
         locs = get_all_locations(session)
         for loc in locs:
             click.echo(f"  [{loc.id}] {loc.name} — {loc.locality}, {loc.ward} ({loc.pin_code})")
         click.echo(f"\nTotal: {len(locs)} locations")
-    finally:
-        session.close()
 
 
 @query.command()
@@ -83,8 +78,7 @@ def locations():
 def intelligence(location_id):
     """Show the unified intelligence snapshot for a location."""
     from brain.data_bank.service import build_location_intelligence_record
-    session = create_session()
-    try:
+    with session_context() as session:
         record = build_location_intelligence_record(session, location_id)
         session.commit()
         if not record:
@@ -102,8 +96,6 @@ def intelligence(location_id):
         click.echo(f"  Risks:             Flood={record['flood_risk_score']} Heat={record['heat_risk_score']} Climate={record['climate_risk_score']}")
         click.echo(f"  Standards:         {', '.join(record['regional_standards']) or 'None'}")
         click.echo(f"  Planning Context:  {record['planning_context_version'] or 'not derived'}")
-    finally:
-        session.close()
 
 
 @query.command()
@@ -113,8 +105,7 @@ def intelligence(location_id):
 def nearby(lat, lng, radius):
     """Find locations near a point."""
     from brain.data_bank.service import find_nearby_locations
-    session = create_session()
-    try:
+    with session_context() as session:
         results = find_nearby_locations(session, lat, lng, radius)
         if not results:
             click.echo("No locations found within radius.")
@@ -123,8 +114,6 @@ def nearby(lat, lng, radius):
             loc = r["location"]
             click.echo(f"  [{loc.id}] {loc.name} — {r['distance_km']}km away")
         click.echo(f"\nFound {len(results)} locations within {radius}km")
-    finally:
-        session.close()
 
 
 @query.command()
@@ -132,8 +121,7 @@ def nearby(lat, lng, radius):
 def summary(location_id):
     """Show full summary for a location."""
     from brain.data_bank.service import get_location_summary
-    session = create_session()
-    try:
+    with session_context() as session:
         s = get_location_summary(session, location_id)
         if not s:
             click.echo("Location not found.")
@@ -178,8 +166,6 @@ def summary(location_id):
             for item in s["nearby_infrastructure"][:8]:
                 i = item["infrastructure"]
                 click.echo(f"    {i.name} ({i.infra_type}, {i.status}) — {item['distance_km']}km")
-    finally:
-        session.close()
 
 
 # --- Scoring commands ---
@@ -189,8 +175,7 @@ def summary(location_id):
 def score(location_id):
     """Score a specific location."""
     from brain.valuation.service import score_location
-    session = create_session()
-    try:
+    with session_context() as session:
         result = score_location(session, location_id)
         session.commit()
         if not result:
@@ -212,8 +197,6 @@ def score(location_id):
         click.echo(f"    Density Score:        {comp.get('density_score')}")
         if comp.get("avg_price_per_sqft"):
             click.echo(f"    Avg Price/sqft:       Rs {comp['avg_price_per_sqft']}")
-    finally:
-        session.close()
 
 
 @cli.command()
@@ -223,8 +206,7 @@ def score(location_id):
 def rankings(top, sort_by):
     """Show top locations by score."""
     from brain.valuation.service import score_all_locations, get_rankings
-    session = create_session()
-    try:
+    with session_context() as session:
         # Ensure scores exist
         score_all_locations(session)
         results = get_rankings(session, top_n=top, sort_by=sort_by)
@@ -240,8 +222,6 @@ def rankings(top, sort_by):
                 f"{r['development_potential_score']:>10.1f} "
                 f"{r['future_appreciation_index']:>10.1f}"
             )
-    finally:
-        session.close()
 
 
 # --- Ingestion commands ---
@@ -252,25 +232,23 @@ def rankings(top, sort_by):
 def ingest(source, path):
     """Ingest data from external sources into the data bank."""
     from brain.data_bank.ingestion import ingest_directory
-    session = create_session()
-    try:
-        click.echo(f"\nIngesting from: {path} (source: {source})")
-        results = ingest_directory(session, path)
-        click.echo(f"\n  {'Type':<20} {'Read':>6} {'Stored':>8} {'Skipped':>9} {'Rate':>8}")
-        click.echo(f"  {'-'*55}")
-        for dtype, result in results.items():
-            click.echo(
-                f"  {dtype:<20} {result.records_read:>6} "
-                f"{result.records_stored:>8} {result.records_skipped:>9} "
-                f"{result.success_rate:>7.1f}%"
-            )
-        click.echo()
-    except Exception as e:
-        session.rollback()
-        click.echo(f"Error: {e}", err=True)
-        raise
-    finally:
-        session.close()
+    with session_context() as session:
+        try:
+            click.echo(f"\nIngesting from: {path} (source: {source})")
+            results = ingest_directory(session, path)
+            click.echo(f"\n  {'Type':<20} {'Read':>6} {'Stored':>8} {'Skipped':>9} {'Rate':>8}")
+            click.echo(f"  {'-'*55}")
+            for dtype, result in results.items():
+                click.echo(
+                    f"  {dtype:<20} {result.records_read:>6} "
+                    f"{result.records_stored:>8} {result.records_skipped:>9} "
+                    f"{result.success_rate:>7.1f}%"
+                )
+            click.echo()
+        except Exception as e:
+            session.rollback()
+            click.echo(f"Error: {e}", err=True)
+            raise
 
 
 @cli.command("ingest-web")
@@ -279,32 +257,30 @@ def ingest_web(manifest):
     """Fetch web pages, use Gemini to extract structured records, and ingest them."""
     from brain.data_bank.ingestion.gemini_web_ingestor import GeminiWebIngestor
 
-    session = create_session()
-    try:
-        click.echo(f"\nGemini web enrichment from: {manifest}")
-        ingestor = GeminiWebIngestor(session)
-        results = ingestor.run_manifest(manifest)
-        click.echo(f"\n  {'Job':<20} {'Read':>6} {'Stored':>8} {'Skipped':>9} {'Rate':>8}")
-        click.echo(f"  {'-'*60}")
-        for job_name, result in results.items():
-            click.echo(
-                f"  {job_name:<20} {result.records_read:>6} "
-                f"{result.records_stored:>8} {result.records_skipped:>9} "
-                f"{result.success_rate:>7.1f}%"
-            )
-            if result.errors:
-                click.echo(f"    errors: {len(result.errors)}")
-                for message in result.errors[:3]:
-                    click.echo(f"      - {message}")
-                if len(result.errors) > 3:
-                    click.echo(f"      - ... {len(result.errors) - 3} more")
-        click.echo()
-    except Exception as e:
-        session.rollback()
-        click.echo(f"Error: {e}", err=True)
-        raise
-    finally:
-        session.close()
+    with session_context() as session:
+        try:
+            click.echo(f"\nGemini web enrichment from: {manifest}")
+            ingestor = GeminiWebIngestor(session)
+            results = ingestor.run_manifest(manifest)
+            click.echo(f"\n  {'Job':<20} {'Read':>6} {'Stored':>8} {'Skipped':>9} {'Rate':>8}")
+            click.echo(f"  {'-'*60}")
+            for job_name, result in results.items():
+                click.echo(
+                    f"  {job_name:<20} {result.records_read:>6} "
+                    f"{result.records_stored:>8} {result.records_skipped:>9} "
+                    f"{result.success_rate:>7.1f}%"
+                )
+                if result.errors:
+                    click.echo(f"    errors: {len(result.errors)}")
+                    for message in result.errors[:3]:
+                        click.echo(f"      - {message}")
+                    if len(result.errors) > 3:
+                        click.echo(f"      - ... {len(result.errors) - 3} more")
+            click.echo()
+        except Exception as e:
+            session.rollback()
+            click.echo(f"Error: {e}", err=True)
+            raise
 
 
 # --- ML commands ---
@@ -319,8 +295,7 @@ def ml():
 def train():
     """Train the price prediction model."""
     from brain.valuation.ml.price_predictor import PricePredictor
-    session = create_session()
-    try:
+    with session_context() as session:
         predictor = PricePredictor()
         result = predictor.train(session)
         if result["status"] == "trained":
@@ -329,8 +304,6 @@ def train():
             click.echo(f"  R² score:       {result['r_squared']}\n")
         else:
             click.echo(f"\n  Training failed: {result}\n", err=True)
-    finally:
-        session.close()
 
 
 @ml.command()
@@ -338,8 +311,7 @@ def train():
 def predict(location_id):
     """Predict future prices for a location."""
     from brain.valuation.ml.price_predictor import PricePredictor
-    session = create_session()
-    try:
+    with session_context() as session:
         predictor = PricePredictor()
         pred = predictor.predict(session, location_id)
         if not pred:
@@ -353,8 +325,6 @@ def predict(location_id):
         click.echo(f"  Predicted (3yr):    Rs {pred.predicted_price_3yr:,.0f}/sqft")
         click.echo(f"  Annual Growth:      {pred.annual_growth_pct:+.1f}%")
         click.echo(f"  Confidence:         {pred.confidence}\n")
-    finally:
-        session.close()
 
 
 @ml.command()
@@ -362,8 +332,7 @@ def hotspots():
     """Detect investment hotspot clusters."""
     from brain.valuation.ml.hotspot_detector import HotspotDetector
     from brain.valuation.service import score_all_locations
-    session = create_session()
-    try:
+    with session_context() as session:
         # Ensure scores exist
         score_all_locations(session)
         detector = HotspotDetector()
@@ -378,8 +347,6 @@ def hotspots():
             for loc in h.locations:
                 click.echo(f"    - {loc['name']} (LV={loc['land_value_score']:.1f}, FA={loc['future_appreciation_index']:.1f}, Rs {loc['avg_price']:,.0f})")
         click.echo()
-    finally:
-        session.close()
 
 
 # --- AI commands ---
@@ -389,13 +356,10 @@ def hotspots():
 def ask(question):
     """Ask a natural language question about real estate data."""
     from brain.ai.service import query as ai_query
-    session = create_session()
-    try:
+    with session_context() as session:
         click.echo("\nThinking...\n")
         answer = ai_query(session, question)
         click.echo(answer)
-    finally:
-        session.close()
 
 
 @cli.command()
@@ -403,13 +367,10 @@ def ask(question):
 def analyze(location_id):
     """Deep AI analysis of a specific location."""
     from brain.ai.service import analyze_location
-    session = create_session()
-    try:
+    with session_context() as session:
         click.echo("\nAnalyzing...\n")
         answer = analyze_location(session, location_id)
         click.echo(answer)
-    finally:
-        session.close()
 
 
 @cli.command()

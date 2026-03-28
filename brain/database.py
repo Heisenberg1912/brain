@@ -1,5 +1,7 @@
+from contextlib import contextmanager
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from brain.config import settings
 
@@ -11,7 +13,8 @@ class Base(DeclarativeBase):
     pass
 
 
-def get_session():
+@contextmanager
+def session_context():
     session = SessionLocal()
     try:
         yield session
@@ -19,5 +22,6 @@ def get_session():
         session.close()
 
 
-def create_session() -> Session:
-    return SessionLocal()
+def get_session():
+    with session_context() as session:
+        yield session
