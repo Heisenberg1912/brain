@@ -1,5 +1,18 @@
-from pydantic_settings import BaseSettings
 from pathlib import Path
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings
+
+# Google retired unversioned 1.x model ids on the Generative Language API; map common env values.
+_LEGACY_GEMINI_MODEL_ALIASES: dict[str, str] = {
+    "gemini-1.5-flash": "gemini-2.5-flash",
+    "gemini-1.5-flash-8b": "gemini-2.5-flash",
+    "gemini-1.5-flash-latest": "gemini-2.5-flash",
+    "gemini-1.5-pro": "gemini-2.5-pro",
+    "gemini-1.5-pro-latest": "gemini-2.5-pro",
+    "gemini-1.0-pro": "gemini-2.5-flash",
+    "gemini-pro": "gemini-2.5-flash",
+}
 
 
 class Settings(BaseSettings):
@@ -17,6 +30,13 @@ class Settings(BaseSettings):
     storage_backend: str = "ipfs"
     ipfs_gateway_base: str = "https://ipfs.io/ipfs"
     weights_file: str = "scoring_weights.json"
+
+    @field_validator("gemini_model")
+    @classmethod
+    def _remap_legacy_gemini_model(cls, v: str) -> str:
+        if not isinstance(v, str):
+            return v
+        return _LEGACY_GEMINI_MODEL_ALIASES.get(v.strip().lower(), v)
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
