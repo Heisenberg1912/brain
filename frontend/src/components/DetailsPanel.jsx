@@ -5,13 +5,11 @@ import {
   Building2,
   ChevronDown,
   CloudSun,
-  Database,
   Gauge,
   MapPin,
   ShieldCheck,
   Sparkles,
   TrendingUp,
-  Users,
   Zap,
 } from 'lucide-react'
 import {
@@ -42,37 +40,130 @@ import {
   CategoryScale,
   Chart as ChartJS,
   Filler,
-  Legend,
   LineElement,
   LinearScale,
   PointElement,
-  RadarController,
-  RadialLinearScale,
   Tooltip,
 } from 'chart.js'
-import { Line, Radar } from 'react-chartjs-2'
+import { Line } from 'react-chartjs-2'
 
 ChartJS.register(
-  RadarController,
-  RadialLinearScale,
+  CategoryScale,
+  LinearScale,
   PointElement,
   LineElement,
   Filler,
-  CategoryScale,
-  LinearScale,
   Tooltip,
-  Legend,
 )
+
+const COMPONENT_COLORS = {
+  land_value: '#f3a93d',
+  development_potential: '#49a5cf',
+  future_appreciation: '#26c28c',
+}
+
+const FINGERPRINT_METRICS = [
+  { key: 'land_value_score', label: 'Land', color: '#f3a93d' },
+  { key: 'development_potential_score', label: 'Build', color: '#49a5cf' },
+  { key: 'future_appreciation_index', label: 'Future', color: '#26c28c' },
+  { key: 'infra_score', label: 'Infra', color: '#f1b96b' },
+  { key: 'price_trend_score', label: 'Trend', color: '#8cccf0' },
+  { key: 'density_score', label: 'Density', color: '#9a7cf3' },
+]
 
 function getFulfilledValue(result) {
   return result?.status === 'fulfilled' ? result.value : null
 }
 
-function ScoreTile({ label, value, tone }) {
+function numericValue(value) {
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? numeric : 0
+}
+
+function toneFromScore(value, inverse = false) {
+  const numeric = numericValue(value)
+
+  if (inverse) {
+    if (numeric <= 30) return 'good'
+    if (numeric <= 55) return 'watch'
+    return 'risk'
+  }
+
+  if (numeric >= 75) return 'good'
+  if (numeric >= 50) return 'watch'
+  return 'risk'
+}
+
+function describeRuleValue(value) {
+  if (value === null || value === undefined || value === '') return 'N/A'
+  if (typeof value === 'boolean') return value ? 'Required' : 'Optional'
+  if (Array.isArray(value)) return value.map((item) => formatLabel(item)).join(' / ')
+  if (typeof value === 'object') {
+    return Object.entries(value)
+      .map(([key, nestedValue]) => `${formatLabel(key)} ${describeRuleValue(nestedValue)}`)
+      .join(' / ')
+  }
+  return String(value)
+}
+
+function ruleEntries(record = {}) {
+  return Object.entries(record).map(([key, value]) => ({
+    key,
+    label: formatLabel(key),
+    value: describeRuleValue(value),
+  }))
+}
+
+function standardKey(item, index) {
+  if (item && typeof item === 'object') {
+    return String(item.id ?? item.code ?? item.title ?? index)
+  }
+  return `${String(item)}-${index}`
+}
+
+function standardLabel(item) {
+  if (!item) return 'Standard'
+  if (typeof item === 'string') return item
+  return item.title || item.code || formatLabel(item.standard_type) || 'Standard'
+}
+
+function buildOrbitGradient(components) {
+  const totalContribution = components.reduce(
+    (total, component) => total + Math.max(numericValue(component.contribution), 0),
+    0,
+  )
+
+  if (!totalContribution) {
+    return 'conic-gradient(rgba(255, 255, 255, 0.1) 0 100%)'
+  }
+
+  let cursor = 0
+  const segments = components.map((component) => {
+    const share = (Math.max(numericValue(component.contribution), 0) / totalContribution) * 100
+    const start = cursor
+    cursor += share
+    const color = COMPONENT_COLORS[component.key] || '#cbd5e1'
+    return `${color} ${start}% ${cursor}%`
+  })
+
+  return `conic-gradient(${segments.join(', ')})`
+}
+
+function ScoreTile({ label, value, tone = 'ink', max = 100, helper = '' }) {
+  const numeric = numericValue(value)
+  const isNumeric = value !== 'N/A' && value !== ''
+  const pct = Math.min(100, Math.max(0, (numeric / max) * 100))
+
   return (
     <div className="score-tile">
       <span className="score-tile-label">{label}</span>
       <strong className={`score-tile-value ${tone}`}>{value}</strong>
+      {helper ? <span className="score-tile-helper">{helper}</span> : null}
+      {isNumeric ? (
+        <div className="score-tile-bar">
+          <div className={`score-tile-fill ${tone}`} style={{ '--pct': `${pct}%` }} />
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -101,8 +192,8 @@ function SignalList({ title, items, tone = 'neutral', isOpen, onToggle }) {
       {isOpen ? (
         <div className="accordion-body">
           <ul>
-            {items.map((item) => (
-              <li key={item}>{item}</li>
+            {items.map((item, index) => (
+              <li key={`${title}-${index}`}>{item}</li>
             ))}
           </ul>
         </div>
@@ -215,53 +306,9 @@ export default function DetailsPanel({ activeId, locations, rankings, hotspots }
   const selectedLocation = activeId ? locations[activeId] : null
   const overviewLeaders = rankings.slice(0, 4)
   const overviewHotspots = hotspots.slice(0, 3)
-
-  const radarData = useMemo(() => {
-    const score = payload.score
-    if (!score) return null
-
-    return {
-      labels: ['Land Value', 'Dev Potential', 'Future App.', 'Infra', 'Price Trend', 'Density'],
-      datasets: [
-        {
-          label: score.location,
-          data: [
-            score.land_value_score,
-            score.development_potential_score,
-            score.future_appreciation_index,
-            score.components?.infra_score || 0,
-            score.components?.price_trend_score || 0,
-            score.components?.density_score || 0,
-          ],
-          backgroundColor: 'rgba(23, 184, 151, 0.16)',
-          borderColor: '#17b897',
-          pointBackgroundColor: '#17b897',
-          borderWidth: 2,
-        },
-      ],
-    }
-  }, [payload.score])
-
-  const radarOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      r: {
-        beginAtZero: true,
-        max: 100,
-        grid: { color: 'rgba(148, 163, 184, 0.2)' },
-        angleLines: { color: 'rgba(148, 163, 184, 0.16)' },
-        pointLabels: {
-          color: '#94a3b8',
-          font: { family: 'Montserrat', size: 11, weight: '600' },
-        },
-        ticks: { display: false },
-      },
-    },
-    plugins: {
-      legend: { display: false },
-    },
-  }
+  const stateCount = useMemo(() => (
+    new Set(Object.values(locations).map((location) => location.state).filter(Boolean)).size
+  ), [locations])
 
   const priceTrendData = useMemo(() => {
     const history = [...(payload.detail?.price_history || [])]
@@ -303,99 +350,6 @@ export default function DetailsPanel({ activeId, locations, rankings, hotspots }
     },
   }
 
-  if (!activeId) {
-    return (
-      <div className="details-overview">
-        <section className="hero-card">
-          <p className="eyebrow">National command center</p>
-          <h3>Select a market to brief it.</h3>
-          <p>Overview, compare, AI, and registry tools stay live in this panel.</p>
-        </section>
-
-        <section className="overview-grid">
-          <ScoreTile label="Tracked markets" value={formatNumber(rankings.length || Object.keys(locations).length)} />
-          <ScoreTile label="Mapped hotspots" value={formatNumber(hotspots.length)} />
-          <ScoreTile label="Top score leader" value={overviewLeaders[0]?.location || 'N/A'} />
-          <ScoreTile label="Lead cluster" value={overviewHotspots[0] ? formatLabel(overviewHotspots[0].label) : 'N/A'} />
-        </section>
-
-        <section className="details-section">
-          <div className="section-heading">
-            <TrendingUp size={18} />
-            <h4>Top ranked markets</h4>
-          </div>
-          <div className="overview-card-grid">
-            {overviewLeaders.map((market) => (
-              <article key={market.location_id} className="mini-card">
-                <div>
-                  <strong>{market.location}</strong>
-                  <span>{formatLabel(market.zoning_type)} zone</span>
-                </div>
-                <b style={{ color: scoreColor(market.land_value_score) }}>{market.land_value_score.toFixed(0)}</b>
-              </article>
-            ))}
-            {overviewLeaders.length === 0 ? <p className="muted-copy">Rankings are still loading.</p> : null}
-          </div>
-        </section>
-
-        <section className="details-section">
-          <div className="section-heading">
-            <Zap size={18} />
-            <h4>Hotspot corridors</h4>
-          </div>
-          <div className="overview-card-grid">
-            {overviewHotspots.map((hotspot) => (
-              <article key={hotspot.cluster_id} className="mini-card">
-                <div>
-                  <strong>{formatLabel(hotspot.label)}</strong>
-                  <span>{hotspot.cluster_size} locations in cluster</span>
-                </div>
-                <b>{hotspot.hotspot_score.toFixed(0)}</b>
-              </article>
-            ))}
-            {overviewHotspots.length === 0 ? <p className="muted-copy">Hotspot clustering is not available yet.</p> : null}
-          </div>
-        </section>
-
-        <section className="details-section">
-          <div className="section-heading">
-            <Database size={18} />
-            <h4>Visible product surfaces</h4>
-          </div>
-          <div className="surface-grid">
-            <article className="surface-card">
-              <strong>Spatial view</strong>
-              <span>Map, heat, infra</span>
-            </article>
-            <article className="surface-card">
-              <strong>Planning + valuation</strong>
-              <span>Planning, pricing, risk</span>
-            </article>
-            <article className="surface-card">
-              <strong>AI layer</strong>
-              <span>Brief, chat, deep dive</span>
-            </article>
-            <article className="surface-card">
-              <strong>Blockchain layer</strong>
-              <span>Plans, listings, assets</span>
-            </article>
-          </div>
-        </section>
-      </div>
-    )
-  }
-
-  if (loading) return <div className="panel-loading"><span className="spinner" /></div>
-  if (loadError) return <div className="panel-error"><AlertTriangle size={22} /><p>{loadError}</p></div>
-
-  const { detail, score, intelligence, core, logic, prediction, planningContext } = payload
-  if (!detail || !score) return null
-
-  const displayedLogic = logic?.logic || core?.logic
-  const selectedName = locationLabel(selectedLocation || detail.location)
-  const locationMeta = locationSecondaryLabel(selectedLocation || detail.location)
-  const nearbyInfrastructure = detail.nearby_infrastructure || []
-
   function togglePanel(panel) {
     setExpandedPanels((current) => ({
       ...current,
@@ -420,46 +374,280 @@ export default function DetailsPanel({ activeId, locations, rankings, hotspots }
     }
   }
 
+  if (!activeId) {
+    return (
+      <div className="details-overview stagger-children">
+        <section className="hero-card overview-hero">
+          <div>
+            <p className="eyebrow">National overview</p>
+            <h3>Pick a market to decode it.</h3>
+          </div>
+          <p>Open any market to see how the score is built, how the masterplan is translated, and where the next move sits.</p>
+        </section>
+
+        <section className="overview-grid">
+          <ScoreTile label="Tracked markets" value={formatNumber(rankings.length || Object.keys(locations).length)} />
+          <ScoreTile label="States" value={formatNumber(stateCount)} />
+          <ScoreTile label="Hotspot clusters" value={formatNumber(hotspots.length)} />
+          <ScoreTile
+            label="Lead score"
+            value={overviewLeaders[0] ? overviewLeaders[0].land_value_score.toFixed(0) : 'N/A'}
+            tone="green"
+          />
+        </section>
+
+        <section className="details-section">
+          <div className="section-heading">
+            <TrendingUp size={18} />
+            <h4>Top ranked markets</h4>
+          </div>
+          <div className="leaderboard-list">
+            {overviewLeaders.map((market) => (
+              <article key={market.location_id} className="leaderboard-row">
+                <div className="leaderboard-copy">
+                  <strong>{market.location}</strong>
+                  <span>{formatLabel(market.zoning_type)} zone</span>
+                </div>
+                <div className="leaderboard-meter">
+                  <span
+                    className="leaderboard-fill"
+                    style={{ '--pct': `${market.land_value_score}%`, '--tone': scoreColor(market.land_value_score) }}
+                  />
+                </div>
+                <b style={{ color: scoreColor(market.land_value_score) }}>{market.land_value_score.toFixed(0)}</b>
+              </article>
+            ))}
+            {overviewLeaders.length === 0 ? <p className="muted-copy">Rankings are still loading.</p> : null}
+          </div>
+        </section>
+
+        <section className="details-section">
+          <div className="section-heading">
+            <Zap size={18} />
+            <h4>Hotspot corridors</h4>
+          </div>
+          <div className="leaderboard-list">
+            {overviewHotspots.map((hotspot) => (
+              <article key={hotspot.cluster_id} className="leaderboard-row">
+                <div className="leaderboard-copy">
+                  <strong>{formatLabel(hotspot.label)}</strong>
+                  <span>{hotspot.cluster_size} markets in cluster</span>
+                </div>
+                <div className="leaderboard-meter">
+                  <span
+                    className="leaderboard-fill"
+                    style={{ '--pct': `${hotspot.hotspot_score}%`, '--tone': scoreColor(hotspot.hotspot_score) }}
+                  />
+                </div>
+                <b>{hotspot.hotspot_score.toFixed(0)}</b>
+              </article>
+            ))}
+            {overviewHotspots.length === 0 ? <p className="muted-copy">Hotspot clustering is not available yet.</p> : null}
+          </div>
+        </section>
+      </div>
+    )
+  }
+
+  if (loading) return <div className="panel-loading"><span className="spinner" /></div>
+  if (loadError) return <div className="panel-error"><AlertTriangle size={22} /><p>{loadError}</p></div>
+
+  const { detail, score, intelligence, core, logic, prediction, planningContext } = payload
+  if (!detail || !score) return null
+
+  const displayedLogic = logic?.logic || core?.logic
+  const selectedName = locationLabel(selectedLocation || detail.location)
+  const locationMeta = locationSecondaryLabel(selectedLocation || detail.location)
+  const nearbyInfrastructure = detail.nearby_infrastructure || []
+  const weightedComponents = displayedLogic?.weighted_components || []
+  const weightedScore = numericValue(displayedLogic?.weighted_score ?? core?.scores?.overall_favorability_score)
+  const weightedBand = displayedLogic?.weighted_band || core?.positioning?.favorability_band || 'N/A'
+  const orbitGradient = buildOrbitGradient(weightedComponents)
+  const fingerprintMetrics = FINGERPRINT_METRICS.map((metric) => ({
+    ...metric,
+    value: numericValue(score.components?.[metric.key] ?? score[metric.key]),
+  }))
+  const outlookDrivers = prediction?.drivers || core?.forward_outlook?.drivers || []
+  const planningRules = [
+    ...ruleEntries(planningContext?.floor_plan_constraints),
+    ...ruleEntries(planningContext?.zoning_validation_rules),
+  ].slice(0, 8)
+  const regionalStandards = (detail.regional_standards || []).slice(0, 4)
+  const envelopeSummary = [
+    detail.masterplan?.fsi ? `FSI ${detail.masterplan.fsi}` : null,
+    detail.masterplan?.max_height_m ? `${detail.masterplan.max_height_m}m` : null,
+    detail.masterplan?.ground_coverage_pct ? `${detail.masterplan.ground_coverage_pct}% coverage` : null,
+  ].filter(Boolean).join(' · ') || 'Envelope pending'
+  const setbackSummary = [
+    detail.masterplan?.setback_front_m ? `Front ${detail.masterplan.setback_front_m}m` : null,
+    detail.masterplan?.setback_side_m ? `Side ${detail.masterplan.setback_side_m}m` : null,
+  ].filter(Boolean).join(' · ') || 'Context-based setbacks'
+  const masterplanSteps = [
+    {
+      key: 'zone',
+      label: 'Zone',
+      value: formatLabel(detail.masterplan?.zoning_type || selectedLocation?.zoning_type),
+    },
+    {
+      key: 'envelope',
+      label: 'Envelope',
+      value: compactText(envelopeSummary, 'Envelope pending', 52),
+    },
+    {
+      key: 'rules',
+      label: 'Rules',
+      value: planningRules.length ? `${planningRules.length} local filters applied` : 'No linked rule set',
+    },
+    {
+      key: 'fit',
+      label: 'Fit',
+      value: formatLabel(core?.positioning?.recommended_use_case || displayedLogic?.execution_strategy),
+    },
+  ]
+  const readinessSignals = [
+    { label: 'Location intelligence', value: planningContext?.location_intelligence_score, inverse: false },
+    { label: 'Climate resilience', value: intelligence?.climate_resilience_score, inverse: false },
+    { label: 'Terrain readiness', value: intelligence?.terrain_readiness_score, inverse: false },
+    { label: 'Data confidence', value: intelligence?.data_confidence_score || displayedLogic?.data_confidence_score, inverse: false },
+    { label: 'Site risk', value: core?.scores?.site_risk_score, inverse: true },
+    { label: 'Flood risk', value: intelligence?.flood_risk_score ?? detail.geo_profile?.flood_risk_score, inverse: true },
+  ]
+  const marketContext = [
+    { label: 'Population', value: formatNumber(detail.census?.population) },
+    { label: 'Growth rate', value: formatPercent(detail.census?.growth_rate_pct) },
+    { label: 'Density / sqkm', value: formatNumber(detail.census?.density_per_sqkm) },
+    { label: 'Avg. price / sqft', value: formatCurrency(detail.avg_price_per_sqft) },
+  ]
+  const contributionTotal = weightedComponents.reduce(
+    (total, component) => total + Math.max(numericValue(component.contribution), 0),
+    0,
+  )
+  const driverMax = Math.max(
+    ...outlookDrivers.map((driver) => Math.abs(numericValue(driver.contribution))),
+    1,
+  )
+
   return (
-    <div className="details-container">
+    <div className="details-container stagger-children">
       <section className="hero-card detail-hero">
-        <div>
-          <p className="eyebrow">Location intelligence</p>
-          <h3>{selectedName}</h3>
-          <div className="hero-meta">
-            <span><MapPin size={14} /> {locationMeta || 'Mapped location'}</span>
-            <span><Building2 size={14} /> {formatLabel(detail.masterplan?.zoning_type || selectedLocation?.zoning_type)}</span>
-            <span><ShieldCheck size={14} /> {formatLabel(core?.positioning?.recommended_use_case || 'market fit pending')}</span>
+        <div className="hero-main">
+          <div>
+            <p className="eyebrow">Location intelligence</p>
+            <h3>{selectedName}</h3>
+            <div className="hero-meta">
+              <span><MapPin size={14} /> {locationMeta || 'Mapped location'}</span>
+              <span><Building2 size={14} /> {formatLabel(detail.masterplan?.zoning_type || selectedLocation?.zoning_type)}</span>
+              <span><ShieldCheck size={14} /> {formatLabel(core?.positioning?.recommended_use_case || 'market fit pending')}</span>
+            </div>
+          </div>
+
+          <div className="hero-score-pill">
+            <span>Weighted score</span>
+            <strong>{weightedScore ? weightedScore.toFixed(1) : 'N/A'}</strong>
+            <small>{formatLabel(weightedBand)}</small>
           </div>
         </div>
+
         <p className="hero-summary">
-          {compactText(core?.key_insight || core?.summary, 'Pricing, planning, infrastructure, and risk in one view.', 110)}
+          {compactText(core?.key_insight || core?.summary, 'Pricing, planning, infrastructure, and risk in one view.', 132)}
         </p>
       </section>
 
       <section className="overview-grid">
-        <ScoreTile label="Land value" value={score.land_value_score.toFixed(0)} tone="green" />
+        <ScoreTile label="Land value" value={score.land_value_score.toFixed(0)} tone="amber" />
         <ScoreTile label="Dev potential" value={score.development_potential_score.toFixed(0)} tone="teal" />
-        <ScoreTile label="Future app." value={score.future_appreciation_index.toFixed(0)} tone="amber" />
+        <ScoreTile label="Future app." value={score.future_appreciation_index.toFixed(0)} tone="green" />
         <ScoreTile
           label="Overall favorability"
-          value={core?.scores?.overall_favorability_score ? core.scores.overall_favorability_score.toFixed(1) : 'N/A'}
+          value={weightedScore ? weightedScore.toFixed(1) : 'N/A'}
           tone="ink"
+          helper={formatLabel(weightedBand)}
         />
       </section>
 
-      <section className="chart-grid">
-        <div className="details-section">
+      <section className="visual-grid">
+        <article className="details-section">
+          <div className="section-heading">
+            <Gauge size={18} />
+            <h4>Score interpretation</h4>
+          </div>
+
+          <div className="score-composer">
+            <div className="score-orbit" style={{ '--orbit-fill': orbitGradient }}>
+              <div className="score-orbit-center">
+                <span>Weighted</span>
+                <strong>{weightedScore ? weightedScore.toFixed(1) : 'N/A'}</strong>
+                <small>{formatLabel(weightedBand)}</small>
+              </div>
+            </div>
+
+            <div className="weighted-stack">
+              {weightedComponents.map((component) => {
+                const color = COMPONENT_COLORS[component.key] || '#cbd5e1'
+                const contributionShare = contributionTotal
+                  ? (Math.max(numericValue(component.contribution), 0) / contributionTotal) * 100
+                  : 0
+
+                return (
+                  <div key={component.key} className="weighted-row">
+                    <div className="weighted-meta">
+                      <div>
+                        <strong>{component.label}</strong>
+                        <span>{Math.round(numericValue(component.weight) * 100)}% weight</span>
+                      </div>
+                      <b>{numericValue(component.contribution).toFixed(1)}</b>
+                    </div>
+                    <div className="weighted-track">
+                      <span style={{ '--pct': `${numericValue(component.value)}%`, '--tone': color }} />
+                    </div>
+                    <div className="weighted-foot">
+                      <span>{numericValue(component.value).toFixed(0)} score</span>
+                      <span>{contributionShare.toFixed(0)}% of total</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {displayedLogic?.rule_hits?.length ? (
+            <div className="rule-hit-grid">
+              {displayedLogic.rule_hits.map((rule) => (
+                <article key={rule.code} className={`rule-hit-card ${rule.effect}`}>
+                  <span>{formatLabel(rule.code)}</span>
+                  <strong>{formatLabel(rule.effect)}</strong>
+                </article>
+              ))}
+            </div>
+          ) : null}
+        </article>
+
+        <article className="details-section">
           <div className="section-heading">
             <BarChart3 size={18} />
-            <h4>Score profile</h4>
+            <h4>Market fingerprint</h4>
           </div>
-          <div className="chart-box">
-            {radarData ? <Radar data={radarData} options={radarOptions} /> : <p className="muted-copy">Score radar is unavailable.</p>}
-          </div>
-        </div>
 
-        <div className="details-section">
+          <div className="fingerprint-chart">
+            {fingerprintMetrics.map((metric) => (
+              <div key={metric.key} className="fingerprint-column">
+                <div className="fingerprint-track">
+                  <span style={{ '--pct': `${metric.value}%`, '--tone': metric.color }} />
+                </div>
+                <strong>{metric.value.toFixed(0)}</strong>
+                <span>{metric.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <p className="section-copy">
+            {compactText(core?.summary, 'The market fingerprint compares value, build readiness, demand, and price momentum in one scan.', 132)}
+          </p>
+        </article>
+      </section>
+
+      <section className="chart-grid">
+        <article className="details-section">
           <div className="section-heading">
             <TrendingUp size={18} />
             <h4>Recorded price path</h4>
@@ -467,38 +655,6 @@ export default function DetailsPanel({ activeId, locations, rankings, hotspots }
           <div className="chart-box">
             {priceTrendData ? <Line data={priceTrendData} options={lineOptions} /> : <p className="muted-copy">Not enough price history points to chart a trend.</p>}
           </div>
-        </div>
-      </section>
-
-      <section className="details-grid">
-        <article className="details-section">
-          <div className="section-heading">
-            <Gauge size={18} />
-            <h4>Decision engine</h4>
-          </div>
-          <div className="stats-grid">
-            <div className="stat-row">
-              <span>Signal</span>
-              <strong>{formatLabel(displayedLogic?.investment_signal)}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Execution</span>
-              <strong>{formatLabel(displayedLogic?.execution_strategy)}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Conviction</span>
-              <strong>{formatLabel(displayedLogic?.conviction)}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Primary driver</span>
-              <strong>{formatLabel(displayedLogic?.primary_driver)}</strong>
-            </div>
-          </div>
-          {displayedLogic?.verdict || core?.key_insight ? (
-            <p className="section-copy">
-              {compactText(displayedLogic?.verdict || core?.key_insight, '', 108)}
-            </p>
-          ) : null}
         </article>
 
         <article className="details-section">
@@ -506,119 +662,149 @@ export default function DetailsPanel({ activeId, locations, rankings, hotspots }
             <TrendingUp size={18} />
             <h4>Forward outlook</h4>
           </div>
-          <div className="stats-grid">
-            <div className="stat-row">
-              <span>Current avg. / sqft</span>
+
+          <div className="mini-data-grid">
+            <div className="mini-data-card">
+              <span>Signal</span>
+              <strong>{formatLabel(prediction?.signal || core?.forward_outlook?.signal)}</strong>
+            </div>
+            <div className="mini-data-card">
+              <span>Confidence</span>
+              <strong>{formatLabel(prediction?.confidence || core?.forward_outlook?.confidence)}</strong>
+            </div>
+            <div className="mini-data-card">
+              <span>Current</span>
               <strong>{formatCurrency(prediction?.current_avg_price ?? detail.avg_price_per_sqft)}</strong>
             </div>
-            <div className="stat-row">
-              <span>1Y projected</span>
-              <strong>{formatCurrency(prediction?.predicted_price_1yr ?? intelligence?.predicted_price_1yr)}</strong>
+            <div className="mini-data-card">
+              <span>1Y upside</span>
+              <strong>{formatPercent(prediction?.predicted_upside_pct ?? core?.forward_outlook?.predicted_upside_pct)}</strong>
             </div>
-            <div className="stat-row">
-              <span>3Y projected</span>
-              <strong>{formatCurrency(prediction?.predicted_price_3yr ?? intelligence?.predicted_price_3yr)}</strong>
+            <div className="mini-data-card">
+              <span>1Y target</span>
+              <strong>{formatCurrency(prediction?.predicted_price_1yr ?? core?.forward_outlook?.predicted_price_1yr)}</strong>
             </div>
-            <div className="stat-row">
-              <span>Upside</span>
-              <strong>{formatPercent(prediction?.predicted_upside_pct)}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Confidence</span>
-              <strong>{formatLabel(prediction?.confidence || intelligence?.prediction_confidence)}</strong>
+            <div className="mini-data-card">
+              <span>3Y target</span>
+              <strong>{formatCurrency(prediction?.predicted_price_3yr ?? core?.forward_outlook?.predicted_price_3yr)}</strong>
             </div>
           </div>
-          {prediction?.summary || core?.forward_outlook?.summary ? (
-            <p className="section-copy">
-              {compactText(prediction?.summary || core?.forward_outlook?.summary, '', 108)}
-            </p>
-          ) : null}
-        </article>
 
+          <div className="driver-stack">
+            {outlookDrivers.map((driver) => {
+              const barPct = (Math.abs(numericValue(driver.contribution)) / driverMax) * 100
+              const tone = driver.direction === 'negative'
+                ? 'var(--red)'
+                : driver.direction === 'neutral'
+                  ? 'var(--amber)'
+                  : 'var(--green)'
+
+              return (
+                <div key={driver.key} className="driver-row">
+                  <div className="driver-head">
+                    <span>{driver.label}</span>
+                    <strong>{numericValue(driver.value).toFixed(0)}</strong>
+                  </div>
+                  <div className="driver-track">
+                    <span style={{ '--pct': `${barPct}%`, '--tone': tone }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </article>
+      </section>
+
+      <section className="details-grid">
         <article className="details-section">
           <div className="section-heading">
             <Building2 size={18} />
-            <h4>Planning and standards</h4>
+            <h4>Masterplan interpretation</h4>
           </div>
-          <div className="stats-grid">
-            <div className="stat-row">
+
+          <div className="envelope-grid">
+            <div className="envelope-tile">
               <span>FSI / FAR</span>
               <strong>{detail.masterplan?.fsi || intelligence?.fsi || 'N/A'}</strong>
             </div>
-            <div className="stat-row">
-              <span>Max height</span>
-              <strong>{detail.masterplan?.max_height_m ? `${detail.masterplan.max_height_m} m` : 'N/A'}</strong>
+            <div className="envelope-tile">
+              <span>Height</span>
+              <strong>{detail.masterplan?.max_height_m ? `${detail.masterplan.max_height_m}m` : 'N/A'}</strong>
             </div>
-            <div className="stat-row">
-              <span>Ground coverage</span>
+            <div className="envelope-tile">
+              <span>Coverage</span>
               <strong>{detail.masterplan?.ground_coverage_pct ? `${detail.masterplan.ground_coverage_pct}%` : 'N/A'}</strong>
             </div>
-            <div className="stat-row">
-              <span>Planning context</span>
+            <div className="envelope-tile">
+              <span>Version</span>
               <strong>{planningContext?.version_tag || intelligence?.planning_context_version || 'N/A'}</strong>
             </div>
-            <div className="stat-row">
-              <span>Standards linked</span>
-              <strong>{formatNumber(detail.regional_standards?.length || 0)}</strong>
-            </div>
           </div>
+
+          <div className="plan-flow">
+            {masterplanSteps.map((step, index) => (
+              <article key={step.key} className="plan-step">
+                <span className="plan-step-index">0{index + 1}</span>
+                <strong>{step.label}</strong>
+                <p>{step.value}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="rule-chip-grid">
+            {planningRules.map((rule) => (
+              <div key={rule.key} className="rule-chip">
+                <span>{rule.label}</span>
+                <strong>{rule.value}</strong>
+              </div>
+            ))}
+            {!planningRules.length ? <p className="muted-copy">No planning rule bundle is linked to this market yet.</p> : null}
+          </div>
+
+          {regionalStandards.length ? (
+            <div className="standards-strip">
+              {regionalStandards.map((item, index) => (
+                <span key={standardKey(item, index)} className="standard-chip">
+                  {standardLabel(item)}
+                </span>
+              ))}
+            </div>
+          ) : null}
+
+          <p className="section-copy">
+            {compactText(planningContext?.source_summary || setbackSummary, 'Masterplan translation condenses zoning, build envelope, setbacks, and execution fit.', 148)}
+          </p>
         </article>
 
         <article className="details-section">
           <div className="section-heading">
             <CloudSun size={18} />
-            <h4>Site and climate</h4>
+            <h4>Site + market context</h4>
           </div>
-          <div className="stats-grid">
-            <div className="stat-row">
-              <span>Terrain</span>
-              <strong>{formatLabel(intelligence?.terrain_class || detail.geo_profile?.terrain_class)}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Slope</span>
-              <strong>{intelligence?.terrain_slope_pct ? `${intelligence.terrain_slope_pct}%` : 'N/A'}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Flood risk</span>
-              <strong>{formatPercent(intelligence?.flood_risk_score ?? detail.geo_profile?.flood_risk_score)}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Heat risk</span>
-              <strong>{formatPercent(intelligence?.heat_risk_score ?? detail.geo_profile?.heat_risk_score)}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Climate risk</span>
-              <strong>{formatPercent(intelligence?.climate_risk_score ?? detail.geo_profile?.climate_risk_score)}</strong>
-            </div>
-          </div>
-        </article>
 
-        <article className="details-section">
-          <div className="section-heading">
-            <Users size={18} />
-            <h4>Demand and price context</h4>
+          <div className="compact-stat-grid">
+            {readinessSignals.map((signal) => {
+              const tone = toneFromScore(signal.value, signal.inverse)
+
+              return (
+                <article key={signal.label} className={`metric-card ${tone}`}>
+                  <span>{signal.label}</span>
+                  <strong>{formatPercent(signal.value, 0)}</strong>
+                  <div className="metric-card-bar">
+                    <span style={{ '--pct': `${numericValue(signal.value)}%` }} />
+                  </div>
+                </article>
+              )
+            })}
           </div>
-          <div className="stats-grid">
-            <div className="stat-row">
-              <span>Population</span>
-              <strong>{formatNumber(detail.census?.population)}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Growth rate</span>
-              <strong>{formatPercent(detail.census?.growth_rate_pct)}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Density / sqkm</span>
-              <strong>{formatNumber(detail.census?.density_per_sqkm)}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Avg. price / sqft</span>
-              <strong>{formatCurrency(detail.avg_price_per_sqft)}</strong>
-            </div>
-            <div className="stat-row">
-              <span>Data confidence</span>
-              <strong>{formatLabel(intelligence?.data_confidence_band || score.components?.data_confidence_band)}</strong>
-            </div>
+
+          <div className="market-mini-grid">
+            {marketContext.map((item) => (
+              <div key={item.label} className="mini-data-card">
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+              </div>
+            ))}
           </div>
         </article>
 
@@ -628,8 +814,8 @@ export default function DetailsPanel({ activeId, locations, rankings, hotspots }
             <h4>Nearby infrastructure</h4>
           </div>
           <div className="catchment-list large">
-            {nearbyInfrastructure.slice(0, 6).map((item) => (
-              <div key={`${item.name}-${item.distance_km}`} className="catchment-row">
+            {nearbyInfrastructure.slice(0, 5).map((item, index) => (
+              <div key={`${item.name}-${item.distance_km}-${index}`} className="catchment-row">
                 <div>
                   <strong>{item.name}</strong>
                   <span>{formatLabel(item.infra_type)} • {formatLabel(item.status)}</span>
@@ -714,8 +900,8 @@ export default function DetailsPanel({ activeId, locations, rankings, hotspots }
 
                 {analysis.recommended_questions?.length ? (
                   <div className="question-strip">
-                    {analysis.recommended_questions.slice(0, 3).map((question) => (
-                      <span key={question} className="question-chip">{question}</span>
+                    {analysis.recommended_questions.slice(0, 3).map((question, index) => (
+                      <span key={`${question}-${index}`} className="question-chip">{question}</span>
                     ))}
                   </div>
                 ) : null}

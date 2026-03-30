@@ -55,20 +55,23 @@ function tileConfig(mode) {
   }
 }
 
-function createLocationMarker({ score, zoning, active, compared }) {
-  const markerColor = scoreHex(score)
+function createLocationMarker({ score, zoning, active, compared, cityInitial }) {
+  const hasScore = score > 0
+  const markerColor = hasScore ? scoreHex(score) : '#6b7280'
   const zoningColor = ZONING_COLORS[zoning] || ZONING_COLORS.unclassified
+  const displayText = hasScore ? Math.round(score) : (cityInitial || '·')
 
   return L.divIcon({
     className: 'custom-location-marker',
-    iconSize: [42, 42],
-    iconAnchor: [21, 21],
+    iconSize: [40, 52],
+    iconAnchor: [20, 20],
     html: `
       <div
-        class="marker-shell ${active ? 'is-active' : ''} ${compared ? 'is-compared' : ''}"
-        style="--marker-color:${markerColor}; --marker-ring:${zoningColor};"
+        class="marker-shell ${active ? 'is-active' : ''} ${compared ? 'is-compared' : ''} ${hasScore ? 'has-score' : 'no-score'}"
+        style="--mc:${markerColor}; --ring:${zoningColor};"
       >
-        <span class="marker-score">${Math.round(score || 0)}</span>
+        <span class="marker-score">${displayText}</span>
+        ${active ? `<span class="marker-zoning-dot" style="background:${zoningColor}"></span>` : ''}
       </div>
     `,
   })
@@ -153,6 +156,26 @@ export default function MapView({
   )
 
   const spotlightHotspots = hotspots.slice(0, 3)
+  const activeRanking = activeId ? rankingById[activeId] : null
+  const coverageItems = useMemo(() => (
+    Object.entries(INFRA_CONFIG)
+      .map(([key, config]) => ({
+        key,
+        label: config.label,
+        color: config.color,
+        count: infrastructureCounts[key] || 0,
+      }))
+      .filter((item) => item.count > 0)
+      .sort((left, right) => right.count - left.count)
+      .slice(0, 4)
+  ), [infrastructureCounts])
+  const activeScores = activeRanking
+    ? [
+        { key: 'land', label: 'Land', value: activeRanking.land_value_score },
+        { key: 'build', label: 'Build', value: activeRanking.development_potential_score },
+        { key: 'future', label: 'Future', value: activeRanking.future_appreciation_index },
+      ]
+    : []
 
   useEffect(() => {
     setBasemapMode(preferredBasemap(theme))
@@ -331,8 +354,14 @@ export default function MapView({
     mappedLocations.forEach((location) => {
       const ranking = rankingById[location.id]
       const score = ranking?.[sortBy] ?? 0
+      const hasScore = score > 0
       const latLng = toLatLng(location)
       if (!latLng) return
+
+      const cityInitial = (location.city || location.name || '?')
+        .replace(/^(Greater|New|North|South|East|West)\s+/i, '')
+        .slice(0, 2)
+        .toUpperCase()
 
       const marker = L.marker(
         latLng,
@@ -342,17 +371,16 @@ export default function MapView({
             zoning: location.zoning_type,
             active: location.id === activeId,
             compared: compareIds.includes(location.id),
+            cityInitial,
           }),
         },
       )
 
       marker.on('click', () => onSelect(location.id))
+      const scoreLabel = hasScore ? `${Math.round(score)}/100` : 'No score yet'
       marker.bindTooltip(
-        `
-          <strong>${locationLabel(location)}</strong><br />
-          ${formatLabel(location.zoning_type)} zone<br />
-          ${sortBy.replaceAll('_', ' ')}: ${Math.round(score)}
-        `,
+        `<strong>${locationLabel(location)}</strong><br />${location.city ? `${location.city} · ` : ''}${formatLabel(location.zoning_type || 'unclassified')} zone<br />${formatLabel(sortBy)}: ${scoreLabel}`,
+        { direction: 'top', offset: [0, -16] },
       )
       marker.addTo(layer)
       bounds.push(latLng)
@@ -470,9 +498,21 @@ export default function MapView({
       <div ref={mapRef} className="map-element" />
 
       <div className="map-overlay top-left glass">
-        <p className="overlay-label">Selected lens</p>
-        <h3>{formatLabel(sortBy)}</h3>
-        <p className="overlay-copy">Scores update live with the active lens.</p>
+        <div className="lens-head">
+          <div>
+            <p className="overlay-label">Active lens</p>
+            <h3>{formatLabel(sortBy)}</h3>
+          </div>
+          <span className="lens-pill">{rankings.length || mappedLocations.length}</span>
+        </div>
+        <div className="lens-scale" aria-hidden>
+          <span className="lens-scale-fill" />
+        </div>
+        <div className="lens-scale-labels">
+          <span>Low</span>
+          <span>Mid</span>
+          <span>High</span>
+        </div>
       </div>
 
       <div className="map-overlay-controls glass">
@@ -518,18 +558,23 @@ export default function MapView({
       <div className="map-overlay bottom-left glass">
         <div className="overlay-section-title">
           <Layers3 size={16} />
-          <span>Infrastructure coverage</span>
+          <span>Coverage</span>
         </div>
         {infrastructureError ? <p className="overlay-muted">{infrastructureError}</p> : null}
-        <div className="infra-grid">
-          {Object.entries(INFRA_CONFIG).map(([key, config]) => (
-            <div key={key} className="infra-chip">
-              <span className="infra-dot" style={{ backgroundColor: config.color }} />
-              <span>{config.label}</span>
-              <strong>{infrastructureCounts[key] || 0}</strong>
-            </div>
-          ))}
-        </div>
+        {coverageItems.length ? (
+          <div className="coverage-chip-grid">
+            {coverageItems.map((item) => (
+              <div key={item.key} className="coverage-chip">
+                <span className="infra-dot" style={{ backgroundColor: item.color }} />
+                <span>{item.label}</span>
+                <strong>{item.count}</strong>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {!infrastructureError && coverageItems.length === 0 ? (
+          <p className="overlay-muted">Infrastructure counts will appear once overlays load.</p>
+        ) : null}
       </div>
 
       <div className="map-overlay bottom-right glass">
@@ -541,6 +586,16 @@ export default function MapView({
               {formatLabel(activeLocation.zoning_type)} zone
               {activeLocation.city ? ` • ${activeLocation.city}` : ''}.
             </p>
+            {activeScores.length ? (
+              <div className="active-score-strip">
+                {activeScores.map((item) => (
+                  <div key={item.key} className="mini-score-chip">
+                    <span>{item.label}</span>
+                    <strong style={{ color: scoreHex(item.value) }}>{item.value.toFixed(0)}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <div className="catchment-list">
               {nearbyInfrastructure.slice(0, 4).map((item) => (
                 <div key={item.id} className="catchment-row">

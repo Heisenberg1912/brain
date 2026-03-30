@@ -9,13 +9,13 @@ const MapView = lazy(() => import('./components/MapView'))
 const RightPanel = lazy(() => import('./components/RightPanel'))
 
 const LEFT_PANEL_STORAGE_KEY = 'builtattic-left-panel-width'
-const RIGHT_PANEL_STORAGE_KEY = 'builtattic-right-panel-width'
-const LEFT_PANEL_DEFAULT = 270
-const RIGHT_PANEL_DEFAULT = 336
-const LEFT_PANEL_MIN = 232
-const LEFT_PANEL_MAX = 360
-const RIGHT_PANEL_MIN = 286
-const RIGHT_PANEL_MAX = 430
+const RIGHT_PANEL_STORAGE_KEY = 'builtattic-right-panel-width-v2'
+const LEFT_PANEL_DEFAULT = 252
+const RIGHT_PANEL_DEFAULT = 360
+const LEFT_PANEL_MIN = 224
+const LEFT_PANEL_MAX = 340
+const RIGHT_PANEL_MIN = 320
+const RIGHT_PANEL_MAX = 448
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
@@ -261,15 +261,15 @@ export default function App() {
           <div className="map-shell-header">
             <div className="map-shell-copy">
               <p className="eyebrow">Spatial Layer</p>
-              <h2 className="display-heading">Corridors, clusters, and timing.</h2>
-              <p>Click into a market and move from macro view to diligence in one step.</p>
+              <h2 className="display-heading">See where the signal concentrates.</h2>
+              <p>Switch the lens, inspect a market, then brief it on the right.</p>
             </div>
 
             <div className="map-shell-toolbar">
               <div className="map-shell-meta">
-                <span><MapPinned size={13} /> {rankings.length || locationCount} markets</span>
+                <span><MapPinned size={13} /> {rankings.length || locationCount} tracked</span>
                 <span><Building2 size={13} /> {stateCount} states</span>
-                <span><GitCompareArrows size={13} /> {compareIds.length} compare</span>
+                <span><GitCompareArrows size={13} /> {compareIds.length} pinned</span>
                 {activeLocation ? <span>{locationLabel(activeLocation)}</span> : null}
                 {hotspotsError ? <span className="meta-warning">{hotspotsError}</span> : null}
               </div>

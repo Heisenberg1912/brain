@@ -251,6 +251,49 @@ def ingest(source, path):
             raise
 
 
+@cli.command("ingest-opencity")
+@click.option("--manifest", default="seed_data/opencity_manifest.json", type=click.Path(), help="Path to OpenCity manifest JSON")
+@click.option("--dataset", default=None, help="Run a single dataset by its OpenCity ID (e.g. bbmp-property-tax-collections)")
+@click.option("--discover", is_flag=True, help="Auto-discover all land/property datasets via CKAN API and ingest them")
+def ingest_opencity(manifest, dataset, discover):
+    """Ingest land, zoning, and property data from data.opencity.in (CKAN API)."""
+    from brain.data_bank.ingestion.opencity_ingestor import OpenCityIngestor
+
+    with session_context() as session:
+        try:
+            ingestor = OpenCityIngestor(session)
+
+            if dataset:
+                click.echo(f"\nOpenCity: ingesting dataset '{dataset}'")
+                results = {dataset: ingestor.run_job({"dataset_id": dataset})}
+            elif discover:
+                click.echo("\nOpenCity: auto-discovering land datasets via CKAN...")
+                results = ingestor.discover_and_ingest()
+            else:
+                manifest_path = manifest
+                click.echo(f"\nOpenCity: ingesting from manifest: {manifest_path}")
+                results = ingestor.run_manifest(manifest_path)
+
+            click.echo(f"\n  {'Dataset':<40} {'Read':>6} {'Stored':>8} {'Skipped':>9} {'Rate':>8}")
+            click.echo(f"  {'-'*75}")
+            for ds_id, result in results.items():
+                click.echo(
+                    f"  {ds_id:<40} {result.records_read:>6} "
+                    f"{result.records_stored:>8} {result.records_skipped:>9} "
+                    f"{result.success_rate:>7.1f}%"
+                )
+                if result.errors:
+                    for msg in result.errors[:2]:
+                        click.echo(f"    ! {msg}")
+                    if len(result.errors) > 2:
+                        click.echo(f"    ! ... {len(result.errors) - 2} more errors")
+            click.echo()
+        except Exception as e:
+            session.rollback()
+            click.echo(f"Error: {e}", err=True)
+            raise
+
+
 @cli.command("ingest-web")
 @click.option("--manifest", required=True, type=click.Path(exists=True), help="Path to Gemini web enrichment manifest JSON")
 def ingest_web(manifest):

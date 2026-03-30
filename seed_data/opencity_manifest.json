@@ -1,0 +1,210 @@
+{
+  "_comment": "OpenCity India land data manifest. Each job downloads one dataset from data.opencity.in and ingests it. Update column_map once you inspect actual CSV headers — run with --dataset <id> and check warnings for 'Skipping invalid record' to see what fields are missing.",
+  "jobs": [
+    {
+      "_comment": "Bengaluru land use map 2011 (CSV + KML). CSV has zone descriptions per area.",
+      "dataset_id": "bengaluru-urban-land-use-maps-2011",
+      "record_type": "zoning",
+      "city": "Bangalore",
+      "state": "Karnataka",
+      "preferred_format": "CSV",
+      "column_map": {
+        "ZONE_TYPE": "zoning_type",
+        "ZONE": "zoning_type",
+        "LANDUSE": "zoning_type",
+        "LAND_USE": "zoning_type",
+        "AREA_NAME": "location_name",
+        "NAME": "location_name",
+        "FSI": "fsi",
+        "FAR": "fsi"
+      },
+      "defaults": {
+        "location_name": "Bangalore",
+        "version": "BDA_RMP_2011",
+        "dataset_version": "opencity_v1",
+        "source": "OpenCity / KSRSAC",
+        "source_url": "https://data.opencity.in/dataset/bengaluru-urban-land-use-maps-2011",
+        "tags": "masterplan|opencity|bangalore|2011"
+      }
+    },
+    {
+      "_comment": "Bengaluru land use map 2017 (KMZ/KML). Contains Placemarks with ExtendedData for each zone.",
+      "dataset_id": "bengaluru-urban-land-use-maps-2017",
+      "record_type": "zoning",
+      "city": "Bangalore",
+      "state": "Karnataka",
+      "preferred_format": "KML",
+      "column_map": {
+        "ZONE_TYPE": "zoning_type",
+        "ZONE": "zoning_type",
+        "LANDUSE": "zoning_type",
+        "LAND_USE": "zoning_type",
+        "AREA_NAME": "location_name",
+        "NAME": "location_name",
+        "FSI": "fsi",
+        "FAR": "fsi"
+      },
+      "defaults": {
+        "location_name": "Bangalore",
+        "version": "BDA_RMP_2017",
+        "dataset_version": "opencity_v1",
+        "source": "OpenCity / KSRSAC",
+        "source_url": "https://data.opencity.in/dataset/bengaluru-urban-land-use-maps-2017",
+        "tags": "masterplan|opencity|bangalore|2017"
+      }
+    },
+    {
+      "_comment": "BBMP property tax collections for Bangalore. Inspect CSV headers and update column_map accordingly. Typical columns: ward_name, tax_demand, etc. — map to location_name and price_per_sqft if available.",
+      "dataset_id": "bbmp-property-tax-collections",
+      "record_type": "price",
+      "city": "Bangalore",
+      "state": "Karnataka",
+      "preferred_format": "CSV",
+      "column_map": {
+        "WARD_NAME": "location_name",
+        "Ward Name": "location_name",
+        "ward_name": "location_name",
+        "PRICE_PER_SQFT": "price_per_sqft",
+        "price_per_sqft": "price_per_sqft",
+        "PROPERTY_TYPE": "property_type",
+        "property_type": "property_type",
+        "DATE": "recorded_date",
+        "YEAR": "recorded_date"
+      },
+      "defaults": {
+        "location_name": "Bangalore",
+        "property_type": "all",
+        "recorded_date": "2023-01-01",
+        "source": "BBMP / OpenCity",
+        "source_url": "https://data.opencity.in/dataset/bbmp-property-tax-collections",
+        "tags": "property-tax|opencity|bangalore|bbmp"
+      }
+    },
+    {
+      "_comment": "Pune property tax collections. Update column_map after inspecting CSV headers.",
+      "dataset_id": "pune-property-tax-collections",
+      "record_type": "price",
+      "city": "Pune",
+      "state": "Maharashtra",
+      "preferred_format": "CSV",
+      "column_map": {
+        "WARD_NAME": "location_name",
+        "Ward Name": "location_name",
+        "ward_name": "location_name",
+        "PRICE_PER_SQFT": "price_per_sqft",
+        "PROPERTY_TYPE": "property_type",
+        "DATE": "recorded_date",
+        "YEAR": "recorded_date"
+      },
+      "defaults": {
+        "location_name": "Pune",
+        "property_type": "all",
+        "recorded_date": "2023-01-01",
+        "source": "Pune Municipal Corporation / OpenCity",
+        "source_url": "https://data.opencity.in/dataset/pune-property-tax-collections",
+        "tags": "property-tax|opencity|pune"
+      }
+    },
+    {
+      "_comment": "Chennai property tax collections. Update column_map after inspecting CSV headers.",
+      "dataset_id": "chennai-property-tax-collections",
+      "record_type": "price",
+      "city": "Chennai",
+      "state": "Tamil Nadu",
+      "preferred_format": "CSV",
+      "column_map": {
+        "WARD_NAME": "location_name",
+        "Ward Name": "location_name",
+        "ward_name": "location_name",
+        "PRICE_PER_SQFT": "price_per_sqft",
+        "PROPERTY_TYPE": "property_type",
+        "DATE": "recorded_date",
+        "YEAR": "recorded_date"
+      },
+      "defaults": {
+        "location_name": "Chennai",
+        "property_type": "all",
+        "recorded_date": "2023-01-01",
+        "source": "Greater Chennai Corporation / OpenCity",
+        "source_url": "https://data.opencity.in/dataset/chennai-property-tax-collections",
+        "tags": "property-tax|opencity|chennai"
+      }
+    },
+    {
+      "_comment": "Bengaluru protected areas and eco-sensitive zones (KML from Forest Dept). Mapped as zoning records with zoning_type=agricultural.",
+      "dataset_id": "protected-areas-eco-sensitive-zones",
+      "record_type": "zoning",
+      "city": "Bangalore",
+      "state": "Karnataka",
+      "preferred_format": "KML",
+      "column_map": {
+        "NAME": "location_name",
+        "ZONE_TYPE": "zoning_type",
+        "TYPE": "zoning_type"
+      },
+      "defaults": {
+        "location_name": "Bangalore",
+        "zoning_type": "agricultural",
+        "version": "ECO_ZONE_KA",
+        "dataset_version": "opencity_v1",
+        "source": "Karnataka Forest Dept / OpenCity",
+        "source_url": "https://data.opencity.in/dataset/protected-areas-eco-sensitive-zones",
+        "tags": "eco-zone|protected|opencity|karnataka"
+      }
+    },
+    {
+      "_comment": "Occupancy certificates issued by BBMP across zones 2011-2022 (CSV). Maps as zoning with approval metadata.",
+      "dataset_id": "occupancy-certificates-bbmp-zones-2011-2022",
+      "record_type": "zoning",
+      "city": "Bangalore",
+      "state": "Karnataka",
+      "preferred_format": "CSV",
+      "column_map": {
+        "ZONE": "location_name",
+        "Zone": "location_name",
+        "WARD": "location_name",
+        "Ward": "location_name",
+        "PROPERTY_TYPE": "zoning_type",
+        "Property Type": "zoning_type",
+        "YEAR": "effective_from"
+      },
+      "defaults": {
+        "location_name": "Bangalore",
+        "zoning_type": "residential",
+        "version": "BBMP_OC_2011_2022",
+        "dataset_version": "opencity_v1",
+        "source": "BBMP / OpenCity",
+        "source_url": "https://data.opencity.in/dataset/occupancy-certificates-bbmp-zones",
+        "tags": "occupancy|bbmp|opencity|bangalore"
+      }
+    },
+    {
+      "_comment": "Delhi Economic Survey 2023 census-type data (CSV). Maps to census records.",
+      "dataset_id": "delhi-economic-survey-2023",
+      "record_type": "census",
+      "city": "Delhi",
+      "state": "Delhi",
+      "preferred_format": "CSV",
+      "column_map": {
+        "AREA": "location_name",
+        "District": "location_name",
+        "DISTRICT": "location_name",
+        "POPULATION": "population",
+        "Population": "population",
+        "YEAR": "year",
+        "Year": "year",
+        "DENSITY": "density_per_sqkm",
+        "Density": "density_per_sqkm",
+        "HOUSEHOLDS": "households",
+        "Households": "households"
+      },
+      "defaults": {
+        "location_name": "Delhi",
+        "year": 2023,
+        "source": "Delhi Government / OpenCity",
+        "source_url": "https://data.opencity.in/dataset/delhi-economic-survey-2023",
+        "tags": "census|economic-survey|opencity|delhi"
+      }
+    }
+  ]
+}

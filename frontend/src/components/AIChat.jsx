@@ -122,6 +122,10 @@ export default function AIChat({ activeId, compareIds, locations, isActive }) {
         compareIds,
       })
 
+      if (!response?.answer) {
+        throw new Error('AI response is unavailable right now.')
+      }
+
       setMessages((current) => [
         ...current,
         {
@@ -174,8 +178,8 @@ export default function AIChat({ activeId, compareIds, locations, isActive }) {
                 </div>
                 {brainProfile.recommendations?.length ? (
                   <div className="recommendation-strip">
-                    {brainProfile.recommendations.map((item) => (
-                      <article key={item.label} className={`recommendation-card priority-${item.priority}`}>
+                    {brainProfile.recommendations.map((item, index) => (
+                      <article key={`${item.label}-${index}`} className={`recommendation-card priority-${item.priority}`}>
                         <strong>{item.label}</strong>
                         <span>{item.action}</span>
                       </article>
@@ -209,8 +213,8 @@ export default function AIChat({ activeId, compareIds, locations, isActive }) {
             {briefError ? <p className="panel-inline-error">{briefError}</p> : null}
 
             <div className="suggestions-grid">
-              {suggestions.map((suggestion) => (
-                <button key={suggestion} className="suggestion-pill" onClick={() => send(suggestion)}>
+              {suggestions.map((suggestion, index) => (
+                <button key={`${suggestion}-${index}`} className="suggestion-pill" onClick={() => send(suggestion)}>
                   {suggestion}
                 </button>
               ))}

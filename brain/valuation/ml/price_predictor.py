@@ -419,7 +419,7 @@ class PricePredictor:
         if trained and self._weights is not None:
             X_norm = self._normalize_features(np.array([features], dtype=float))
             X_b = np.column_stack([np.ones(1), X_norm])
-            predicted_next = float(X_b @ self._weights)
+            predicted_next = float((X_b @ self._weights).item())
             drivers = self._build_prediction_drivers(features, X_norm[0])
             model_version = self.MODEL_VERSION
         else:

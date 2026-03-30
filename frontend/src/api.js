@@ -75,6 +75,33 @@ async function withDemoFallback(requestFactory, fallbackFactory) {
   }
 }
 
+function buildLocalAIAnswerFallback(question, { locationId = null, compareIds = [] } = {}) {
+  const normalizedQuestion = String(question ?? '').trim() || 'this market'
+  const contextLabel = compareIds.length >= 2
+    ? `Compare: ${compareIds.join(' vs ')}`
+    : locationId
+      ? `Market ${locationId}`
+      : 'National view'
+
+  const scopeMessage = compareIds.length >= 2
+    ? 'The live AI service is unavailable, and this comparison set is not part of the bundled demo dataset.'
+    : locationId
+      ? 'The live AI service is unavailable, and this selected market is not part of the bundled demo dataset.'
+      : 'The live AI service is unavailable right now.'
+
+  return {
+    answer: [
+      '## AI temporarily unavailable',
+      scopeMessage,
+      '',
+      `Question received: ${normalizedQuestion}`,
+      '- The structured valuation and planning panels are still available for score-based guidance.',
+      '- If you want live AI answers here, configure an AI provider key for the backend.',
+    ].join('\n'),
+    context_label: contextLabel,
+  }
+}
+
 export function fetchLocations(filters = {}) {
   return withDemoFallback(
     () => requestJson(`/api/v1/data/locations${buildQuery(filters)}`),
@@ -179,7 +206,7 @@ export function askAI(question, { locationId = null, compareIds = [] } = {}) {
         compare_ids: compareIds,
       }),
     }),
-    () => getDemoAIAnswer(question, { locationId, compareIds }),
+    () => getDemoAIAnswer(question, { locationId, compareIds }) ?? buildLocalAIAnswerFallback(question, { locationId, compareIds }),
   )
 }
 

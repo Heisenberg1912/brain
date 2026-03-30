@@ -246,7 +246,11 @@ def get_geo_profile(location_id: int, db: Session = Depends(get_db)):
 def get_planning_context(location_id: int, db: Session = Depends(get_db)):
     context = data_svc.get_planning_context(db, location_id)
     if not context:
-        raise HTTPException(status_code=404, detail=f"Planning context for location {location_id} not found")
+        try:
+            context = data_svc.derive_planning_context(db, location_id)
+            db.commit()
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
     return _planning_context_to_dict(context)
 
 

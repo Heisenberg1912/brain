@@ -232,8 +232,8 @@ export default function CompareView({ compareIds, locations }) {
               </div>
               {aiSummary.recommended_questions?.length ? (
                 <div className="question-strip">
-                  {aiSummary.recommended_questions.slice(0, 3).map((question) => (
-                    <span key={question} className="question-chip">{question}</span>
+                  {aiSummary.recommended_questions.slice(0, 3).map((question, index) => (
+                    <span key={`${question}-${index}`} className="question-chip">{question}</span>
                   ))}
                 </div>
               ) : null}

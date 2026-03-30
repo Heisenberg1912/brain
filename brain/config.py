@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     openai_api_key: str = ""
     anthropic_api_key: str = ""
-    llm_provider: str = "openai"  # "openai", "claude", or "gemini"
+    llm_provider: str = "gemini"  # "openai", "claude", or "gemini"
     openai_model: str = "gpt-4o"
     openai_base_url: str = ""
     claude_model: str = "claude-sonnet-4-5"

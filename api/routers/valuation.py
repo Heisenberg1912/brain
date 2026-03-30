@@ -1,3 +1,4 @@
+from dataclasses import asdict, is_dataclass
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -145,7 +146,7 @@ def predict_price(location_id: int, db: Session = Depends(get_db)):
     prediction = val_svc.predict_price_for_location(db, location_id)
     if not prediction:
         raise HTTPException(status_code=404, detail=f"Prediction unavailable for location {location_id}")
-    return prediction
+    return asdict(prediction) if is_dataclass(prediction) else prediction
 
 
 @router.get("/hotspots", response_model=list[HotspotOut])

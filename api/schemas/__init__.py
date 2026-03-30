@@ -164,7 +164,7 @@ class LocationIntelligenceOut(BaseModel):
     climate_risk_score: float | None = None
     predicted_price_1yr: float | None = None
     predicted_price_3yr: float | None = None
-    prediction_confidence: float | None = None
+    prediction_confidence: str | None = None
     planning_context_id: int | None = None
     planning_context_version: str | None = None
     data_confidence_score: float | None = None

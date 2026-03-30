@@ -1,6 +1,5 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import {
-  ArrowRight,
   GitCompareArrows,
   Search,
   SlidersHorizontal,
@@ -16,6 +15,17 @@ const SORT_OPTIONS = [
   { value: 'development_potential_score', label: 'Development Potential' },
   { value: 'future_appreciation_index', label: 'Future Appreciation' },
 ]
+
+const CARD_METRICS = [
+  { key: 'land_value_score', label: 'Land' },
+  { key: 'development_potential_score', label: 'Build' },
+  { key: 'future_appreciation_index', label: 'Future' },
+]
+
+function averageScore(rows, key) {
+  if (!rows.length) return 0
+  return rows.reduce((total, row) => total + (Number(row[key]) || 0), 0) / rows.length
+}
 
 export default function RankingsPanel({
   rankings,
@@ -36,9 +46,11 @@ export default function RankingsPanel({
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search.trim().toLowerCase())
 
-  const filteredRankings = rankings.filter((row) => (
-    !deferredSearch || row.location.toLowerCase().includes(deferredSearch)
-  ))
+  const filteredRankings = useMemo(() => (
+    rankings.filter((row) => (
+      !deferredSearch || row.location.toLowerCase().includes(deferredSearch)
+    ))
+  ), [deferredSearch, rankings])
 
   const leadMarket = filteredRankings[0] || rankings[0] || null
   const futureLeader = useMemo(() => {
@@ -46,31 +58,41 @@ export default function RankingsPanel({
     return [...rankings].sort((left, right) => right.future_appreciation_index - left.future_appreciation_index)[0]
   }, [rankings])
 
+  const activeLens = SORT_OPTIONS.find((option) => option.value === sortBy) || SORT_OPTIONS[0]
+  const visibleAverage = useMemo(
+    () => averageScore(filteredRankings, sortBy),
+    [filteredRankings, sortBy],
+  )
+
   return (
     <aside className={`rankings-panel glass ${isOpen ? 'mobile-open' : ''}`}>
       <div className="rankings-header">
         <div>
           <p className="eyebrow">Market Board</p>
-          <h2 className="display-heading">Ranked opportunities</h2>
+          <h2 className="display-heading">Signals by market</h2>
         </div>
         <button className="close-mobile" onClick={onClose} aria-label="Close market list">
           <X size={18} />
         </button>
       </div>
 
-      <div className="rail-spotlight">
-        <article className="spotlight-card">
-          <span className="spotlight-label">Lead market</span>
-          <strong>{leadMarket?.location || 'Refreshing rankings'}</strong>
-          <p>{leadMarket ? `${formatLabel(leadMarket.zoning_type)} zone` : 'Waiting for scores.'}</p>
+      <div className="rail-summary">
+        <article className="summary-card">
+          <span className="summary-label">Lead market</span>
+          <strong>{leadMarket?.location || 'Refreshing'}</strong>
+          <p>{leadMarket ? `${formatLabel(leadMarket.zoning_type)} zone` : 'Waiting for rankings.'}</p>
         </article>
 
-        <article className="spotlight-card compact">
-          <span className="spotlight-label">Highest future upside</span>
-          <strong>{futureLeader?.location || 'Loading'}</strong>
-          <b style={{ color: scoreHex(futureLeader?.future_appreciation_index || 0) }}>
-            {futureLeader ? futureLeader.future_appreciation_index.toFixed(0) : '--'}
-          </b>
+        <article className="summary-card">
+          <span className="summary-label">Future leader</span>
+          <strong>{futureLeader?.future_appreciation_index?.toFixed(0) || '--'}</strong>
+          <p>{futureLeader?.location || 'Loading market'}</p>
+        </article>
+
+        <article className="summary-card compact">
+          <span className="summary-label">Visible set</span>
+          <strong>{filteredRankings.length || 0}</strong>
+          <p>{filteredRankings.length ? `${activeLens.label} avg ${visibleAverage.toFixed(0)}` : 'No markets in view'}</p>
         </article>
       </div>
 
@@ -91,15 +113,15 @@ export default function RankingsPanel({
             onClick={onToggleCompareMode}
           >
             <GitCompareArrows size={16} />
-            <span>{compareMode ? 'Compare enabled' : 'Compare off'}</span>
+            <span>{compareMode ? 'Pinning on' : 'Pin markets'}</span>
           </button>
-          <span className="compare-count">{compareIds.length}/3 selected</span>
+          <span className="compare-count">{compareIds.length}/3 pinned</span>
           <button
             className="compare-open"
             onClick={onOpenCompare}
             disabled={compareIds.length < 2}
           >
-            Open compare
+            Compare
           </button>
         </div>
       </div>
@@ -142,6 +164,10 @@ export default function RankingsPanel({
               const isCompared = compareIds.includes(row.location_id)
               const displayScore = Number(row[sortBy]) || 0
               const compareDisabled = !isCompared && compareIds.length >= 3
+              const cardMetrics = CARD_METRICS.map((metric) => ({
+                ...metric,
+                value: Number(row[metric.key]) || 0,
+              }))
 
               return (
                 <article
@@ -149,76 +175,71 @@ export default function RankingsPanel({
                   className={`ranking-card ${isActive ? 'active' : ''}`}
                   onClick={() => onSelect(row.location_id)}
                 >
-                  <div className="ranking-card-top">
-                    <div className="rank-badge">
-                      <Trophy size={14} />
-                      <span>#{row.rank}</span>
+                  <div className="ranking-card-head">
+                    <div className="ranking-title-wrap">
+                      <div className="rank-badge">
+                        <Trophy size={13} />
+                        <span>#{row.rank}</span>
+                      </div>
+
+                      <div className="ranking-title-group">
+                        <h3>{row.location}</h3>
+                        <p>{formatLabel(row.zoning_type)} zone</p>
+                      </div>
                     </div>
-                    <div className="ranking-score" style={{ color: scoreHex(displayScore) }}>
-                      {displayScore.toFixed(0)}
+
+                    <div className="ranking-card-actions">
+                      <button
+                        className={`pin-chip ${isCompared ? 'selected' : ''}`}
+                        disabled={compareDisabled}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onToggleCompareId(row.location_id)
+                        }}
+                      >
+                        {isCompared ? 'Pinned' : compareMode ? 'Pick' : 'Pin'}
+                      </button>
+
+                      <div className="ranking-score-block">
+                        <span>{activeLens.label}</span>
+                        <strong style={{ color: scoreHex(displayScore) }}>{displayScore.toFixed(0)}</strong>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="ranking-title-group">
-                    <h3>{row.location}</h3>
-                    <p>{formatLabel(row.zoning_type)} zone</p>
+                  <div className="ranking-fingerprint" aria-hidden>
+                    {cardMetrics.map((metric) => (
+                      <div
+                        key={metric.key}
+                        className={`fingerprint-lane ${sortBy === metric.key ? 'active' : ''}`}
+                      >
+                        <span
+                          className="fingerprint-fill"
+                          style={{ '--pct': `${metric.value}%`, '--tone': scoreHex(metric.value) }}
+                        />
+                      </div>
+                    ))}
                   </div>
 
-                  <div className="ranking-bars">
-                    <div className="bar-row">
-                      <span>Land</span>
-                      <div className="bar-track">
-                        <div className="bar-fill" style={{ width: `${row.land_value_score}%` }} />
+                  <div className="fingerprint-labels">
+                    {cardMetrics.map((metric) => (
+                      <div
+                        key={metric.key}
+                        className={`fingerprint-stat ${sortBy === metric.key ? 'active' : ''}`}
+                      >
+                        <span>{metric.label}</span>
+                        <strong>{metric.value.toFixed(0)}</strong>
                       </div>
-                      <strong>{row.land_value_score.toFixed(0)}</strong>
-                    </div>
-                    <div className="bar-row">
-                      <span>Dev</span>
-                      <div className="bar-track">
-                        <div className="bar-fill alt" style={{ width: `${row.development_potential_score}%` }} />
-                      </div>
-                      <strong>{row.development_potential_score.toFixed(0)}</strong>
-                    </div>
-                    <div className="bar-row">
-                      <span>Future</span>
-                      <div className="bar-track">
-                        <div className="bar-fill warm" style={{ width: `${row.future_appreciation_index}%` }} />
-                      </div>
-                      <strong>{row.future_appreciation_index.toFixed(0)}</strong>
-                    </div>
-                  </div>
-
-                  <div className="ranking-actions">
-                    <button
-                      className={`action-chip ${isCompared ? 'selected' : ''}`}
-                      disabled={compareDisabled}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onToggleCompareId(row.location_id)
-                      }}
-                    >
-                      {isCompared ? 'In basket' : 'Add basket'}
-                    </button>
-                    <button
-                      className="action-chip secondary"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onSelect(row.location_id)
-                      }}
-                    >
-                      Open <ArrowRight size={14} />
-                    </button>
+                    ))}
                   </div>
                 </article>
               )
             })}
 
-            {!loading && filteredRankings.length > 0 ? (
-              <div className="rail-footer-note">
-                <Sparkles size={15} />
-                <span>Use compare mode to build a short list.</span>
-              </div>
-            ) : null}
+            <div className="rail-footer-note">
+              <Sparkles size={15} />
+              <span>Click a row to open its score and masterplan interpretation.</span>
+            </div>
           </div>
         ) : null}
       </div>

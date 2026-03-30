@@ -1,6 +1,7 @@
 """AI service: API gateway -> adapter registry -> structured tools."""
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -11,6 +12,8 @@ from brain.ai.adapters import LLMAdapter
 from brain.ai.tools import build_compare_tool_context, build_location_tool_context, build_market_tool_context
 from brain.data_bank import service as data_svc
 from brain.valuation import service as valuation_service
+
+logger = logging.getLogger(__name__)
 
 
 def _get_llm() -> LLMAdapter:
@@ -64,6 +67,189 @@ def _tone_for_score(value: float | None) -> str:
     if value >= 55:
         return "watch"
     return "risk"
+
+
+def _format_score(value: float | None) -> str:
+    if value is None:
+        return "N/A"
+    return f"{float(value):.1f}"
+
+
+def _format_percent(value: float | None) -> str:
+    if value is None:
+        return "Insufficient data"
+    return f"{float(value):.1f}%"
+
+
+def _format_currency_per_sqft(value: float | None) -> str:
+    if value is None:
+        return "Insufficient data"
+    return f"Rs {round(float(value)):,}/sqft"
+
+
+def _titleize(value: str | None, default: str = "N/A") -> str:
+    if not value:
+        return default
+    return str(value).replace("_", " ").replace("-", " ").title()
+
+
+def _compare_weighted_score(row: dict[str, Any]) -> float:
+    return (
+        float(row.get("land_value_score") or 0.0) * 0.3
+        + float(row.get("development_potential_score") or 0.0) * 0.3
+        + float(row.get("future_appreciation_index") or 0.0) * 0.4
+    )
+
+
+def _fallback_market_query(session: Session, user_query: str) -> str:
+    brief = _fallback_market_brief(session)
+    lead_market = brief["top_opportunities"][0]["location_name"] if brief["top_opportunities"] else "the leading market"
+    watchouts = brief.get("watchouts") or []
+    normalized_question = user_query.strip().lower()
+    closing = (
+        "\n".join(f"- {item}" for item in watchouts[:2])
+        if "risk" in normalized_question and watchouts
+        else brief["national_thesis"]
+    )
+    return "\n".join([
+        "## National market brief",
+        brief["summary"],
+        "",
+        f"- Lead market today: {lead_market}",
+        f"- Opportunity count in view: {len(brief.get('top_opportunities') or [])}",
+        "- Mode: structured fallback from valuation data",
+        "",
+        closing,
+    ])
+
+
+def _fallback_location_query(session: Session, user_query: str, location_id: int) -> str:
+    core = valuation_service.build_core_outputs(session, location_id)
+    if not core:
+        return "\n".join([
+            "## Location unavailable",
+            "Structured location intelligence is not available for this selection yet.",
+        ])
+
+    normalized_question = user_query.strip().lower()
+    location_name = core["location"]
+    logic = core.get("logic") or {}
+    forward = core.get("forward_outlook") or {}
+    positioning = core.get("positioning") or {}
+    risks = core.get("risks") or []
+    opportunities = core.get("opportunities") or []
+    key_insight = core.get("key_insight") or core.get("summary") or "Structured valuation context is available."
+
+    if "risk" in normalized_question:
+        return "\n".join([
+            f"## Risk view for {location_name}",
+            risks[0] if risks else key_insight,
+            "",
+            f"- Site risk score: {_format_score(core.get('scores', {}).get('site_risk_score'))}",
+            f"- Data confidence: {_titleize((core.get('coverage') or {}).get('confidence_band'), 'Unknown')}",
+            f"- Investment signal: {_titleize(logic.get('investment_signal'), 'Watch')}",
+            f"- Mitigant: {opportunities[0] if opportunities else 'Lean on the strongest infrastructure and entitlement signals before committing.'}",
+        ])
+
+    if any(token in normalized_question for token in ("use", "fit", "program")):
+        return "\n".join([
+            f"## Best fit for {location_name}",
+            key_insight,
+            "",
+            f"- Recommended use case: {_titleize(positioning.get('recommended_use_case'), 'Mixed Use')}",
+            f"- Execution strategy: {_titleize(logic.get('execution_strategy'), 'Monitor')}",
+            f"- Favorability band: {_titleize(positioning.get('favorability_band'), 'Selective')}",
+            f"- Why now: {opportunities[0] if opportunities else core.get('summary', 'The structured signal is directionally positive.')}",
+        ])
+
+    if any(token in normalized_question for token in ("upside", "future", "forecast", "1-year", "1 year", "3-year", "3 year")):
+        return "\n".join([
+            f"## Upside view for {location_name}",
+            key_insight,
+            "",
+            f"- Current average price: {_format_currency_per_sqft(forward.get('current_avg_price'))}",
+            f"- Projected 1Y price: {_format_currency_per_sqft(forward.get('predicted_price_1yr'))}",
+            f"- Projected 3Y price: {_format_currency_per_sqft(forward.get('predicted_price_3yr'))}",
+            f"- Projected 1Y upside: {_format_percent(forward.get('predicted_upside_pct'))}",
+        ])
+
+    return "\n".join([
+        f"## {location_name}",
+        core.get("summary") or key_insight,
+        "",
+        f"- Investment signal: {_titleize(logic.get('investment_signal'), 'Watch')}",
+        f"- Best use case: {_titleize(positioning.get('recommended_use_case'), 'Mixed Use')}",
+        f"- Future appreciation index: {_format_score(core.get('scores', {}).get('future_appreciation_index'))}",
+        f"- Key watch-out: {risks[0] if risks else 'Keep diligence active around regulation, timing, and site execution.'}",
+    ])
+
+
+def _fallback_compare_query(session: Session, user_query: str, compare_ids: list[int]) -> str:
+    rows = valuation_service.compare_locations(session, compare_ids)
+    if not rows:
+        return "\n".join([
+            "## Comparison unavailable",
+            "Not enough structured comparison data is available for the selected basket.",
+        ])
+
+    normalized_question = user_query.strip().lower()
+    best_overall = max(rows, key=_compare_weighted_score)
+    best_upside = max(rows, key=lambda row: float(row.get("future_appreciation_index") or 0.0))
+    lowest_risk = min(rows, key=lambda row: float((row.get("components") or {}).get("site_risk_score") or 100.0))
+
+    if "risk" in normalized_question:
+        winner = lowest_risk
+        rationale = (
+            f"{winner['location']} carries the lightest site-risk burden in this basket while still preserving "
+            "competitive upside."
+        )
+    elif any(token in normalized_question for token in ("upside", "future", "forecast", "3-year", "3 year")):
+        winner = best_upside
+        rationale = (
+            f"{winner['location']} has the strongest appreciation setup on the current structured signals."
+        )
+    else:
+        winner = best_overall
+        rationale = (
+            f"{winner['location']} is the strongest overall option based on value, development headroom, and forward appreciation."
+        )
+
+    winner_profile = valuation_service.build_favorability_profile(session, winner["location_id"])
+    recommended_use_case = _titleize(
+        winner_profile.get("recommended_use_case") if winner_profile else None,
+        "Mixed Use",
+    )
+    key_watchout = (
+        (winner_profile.get("risks") or [None])[0]
+        if winner_profile
+        else "Keep site diligence active before underwriting the full thesis."
+    )
+
+    return "\n".join([
+        "## Comparison takeaway",
+        rationale,
+        "",
+        f"- Best overall posture: {best_overall['location']}",
+        f"- Best future upside: {best_upside['location']}",
+        f"- Cleanest risk posture: {lowest_risk['location']}",
+        f"- Best fit for {winner['location']}: {recommended_use_case}",
+        f"- Key watch-out: {key_watchout}",
+    ])
+
+
+def _fallback_query_answer(
+    session: Session,
+    user_query: str,
+    *,
+    location_id: int | None = None,
+    compare_ids: list[int] | None = None,
+) -> str:
+    compare_ids = compare_ids or []
+    if compare_ids:
+        return _fallback_compare_query(session, user_query, compare_ids)
+    if location_id:
+        return _fallback_location_query(session, user_query, location_id)
+    return _fallback_market_query(session, user_query)
 
 
 def _fallback_market_brief(session: Session) -> dict[str, Any]:
@@ -217,7 +403,6 @@ def query(
     location_id: int | None = None,
     compare_ids: list[int] | None = None,
 ) -> dict[str, Any]:
-    llm = _get_llm()
     market_context = build_market_tool_context(session, top_n=8)
     context_blocks = [market_context]
     context_label = _context_label(session, location_id=location_id, compare_ids=compare_ids)
@@ -240,8 +425,29 @@ Question: {user_query}
 
 Focus on the best options and explain why with scores, forecast direction, and risk tradeoffs."""
 
+    try:
+        llm = _get_llm()
+        answer = llm.generate(prompt, system_instruction=SYSTEM_PROMPT)
+    except Exception as exc:
+        logger.warning("LLM query failed, returning structured fallback answer: %s", exc)
+        try:
+            answer = _fallback_query_answer(
+                session,
+                user_query,
+                location_id=location_id,
+                compare_ids=compare_ids,
+            )
+        except Exception:
+            logger.exception("Structured AI query fallback failed.")
+            answer = "\n".join([
+                "## AI temporarily unavailable",
+                "The live provider and local structured fallback are both unavailable right now.",
+                "",
+                "- Please try again after the backend recovers or an AI provider key is configured.",
+            ])
+
     return {
-        "answer": llm.generate(prompt, system_instruction=SYSTEM_PROMPT),
+        "answer": answer,
         "context_label": context_label,
     }
 
