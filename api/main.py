@@ -1,10 +1,8 @@
 """FastAPI app — thin wrapper around brain/ engine."""
 import logging
-from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 
 from api.routers import data_bank, valuation, ai, blockchain
 
@@ -18,16 +16,6 @@ app.include_router(valuation.router, prefix="/api/v1/valuation", tags=["Valuatio
 app.include_router(ai.router, prefix="/api/v1/ai", tags=["AI"])
 app.include_router(blockchain.router, prefix="/api/v1/chain", tags=["Blockchain"])
 
-# Serve React build (production) or fallback to source index.html (dev)
-FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
-DIST_DIR = FRONTEND_DIR / "dist"
-
-# Use the built React app if it exists, otherwise fall back to source
-STATIC_DIR = DIST_DIR if DIST_DIR.exists() else FRONTEND_DIR
-
-if (DIST_DIR / "assets").exists():
-    app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
-
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
@@ -38,12 +26,3 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "builtattic-brain"}
-
-
-@app.get("/{full_path:path}")
-def serve_spa(full_path: str):
-    """Serve the React SPA — all non-API routes fall through to index.html."""
-    file_path = STATIC_DIR / full_path
-    if full_path and file_path.exists() and file_path.is_file():
-        return FileResponse(str(file_path))
-    return FileResponse(str(STATIC_DIR / "index.html"))
