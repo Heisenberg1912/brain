@@ -43,8 +43,8 @@
 }
 
 .chain-hero-stats {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  min-width: 15rem;
+  grid-template-columns: 1fr;
+  min-width: 0;
 }
 
 .hero-stat,
@@ -55,11 +55,23 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
+.hero-stat {
+  min-width: 0;
+}
+
 .hero-stat span,
 .bp-card p,
 .bp-card small,
 .bp-meta-row span {
   color: var(--text-muted);
+}
+
+.hero-stat span,
+.hero-stat strong {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .bp-card p,

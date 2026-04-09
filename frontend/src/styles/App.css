@@ -48,22 +48,18 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  cursor: col-resize;
+  cursor: default;
+  pointer-events: none;
   touch-action: none;
+  background: transparent;
 }
 
 .panel-resizer span {
   width: 0.2rem;
   height: 4.25rem;
   border-radius: 999px;
-  background: rgba(160, 181, 210, 0.18);
-  transition: background 0.2s ease, transform 0.2s ease;
-}
-
-.panel-resizer:hover span,
-.panel-resizer:focus-visible span {
-  background: rgba(241, 185, 107, 0.48);
-  transform: scaleY(1.04);
+  background: rgba(160, 181, 210, 0.1);
+  transition: none;
 }
 
 .map-shell-header {

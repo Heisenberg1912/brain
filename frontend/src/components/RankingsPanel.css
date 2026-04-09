@@ -27,10 +27,16 @@
 }
 
 .summary-card {
+  min-width: 0;
   padding: 0.68rem 0.72rem;
   border-radius: 18px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.035);
+  overflow: hidden;
+}
+
+.summary-card > * {
+  min-width: 0;
 }
 
 .summary-card.compact {
@@ -53,6 +59,8 @@
   margin-top: 0.34rem;
   font-size: 0.96rem;
   line-height: 1.25;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .summary-card p {
@@ -60,6 +68,8 @@
   color: var(--text-muted);
   font-size: 0.72rem;
   line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .rankings-toolbar {

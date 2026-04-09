@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { Building2, GitCompareArrows, MapPinned, Menu, MoonStar, RotateCcw, SunMedium } from 'lucide-react'
 import RankingsPanel from './components/RankingsPanel'
 import { fetchHotspots, fetchLocations, fetchRankings } from './api'
@@ -8,24 +8,9 @@ import './styles/App.css'
 const MapView = lazy(() => import('./components/MapView'))
 const RightPanel = lazy(() => import('./components/RightPanel'))
 
-const LEFT_PANEL_STORAGE_KEY = 'builtattic-left-panel-width'
-const RIGHT_PANEL_STORAGE_KEY = 'builtattic-right-panel-width-v2'
-const LEFT_PANEL_DEFAULT = 252
-const RIGHT_PANEL_DEFAULT = 360
-const LEFT_PANEL_MIN = 224
-const LEFT_PANEL_MAX = 340
-const RIGHT_PANEL_MIN = 320
-const RIGHT_PANEL_MAX = 448
-
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value))
-}
-
-function readStoredWidth(key, fallback, min, max) {
-  const storedValue = Number(localStorage.getItem(key))
-  if (!Number.isFinite(storedValue)) return fallback
-  return clamp(storedValue, min, max)
-}
+const LEFT_PANEL_DEFAULT = 320
+const RIGHT_PANEL_DEFAULT = 470
+const CENTER_PANEL_MIN = 620
 
 export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
@@ -43,60 +28,13 @@ export default function App() {
   const [compareMode, setCompareMode] = useState(false)
   const [compareIds, setCompareIds] = useState([])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [leftPanelWidth, setLeftPanelWidth] = useState(() => (
-    readStoredWidth(LEFT_PANEL_STORAGE_KEY, LEFT_PANEL_DEFAULT, LEFT_PANEL_MIN, LEFT_PANEL_MAX)
-  ))
-  const [rightPanelWidth, setRightPanelWidth] = useState(() => (
-    readStoredWidth(RIGHT_PANEL_STORAGE_KEY, RIGHT_PANEL_DEFAULT, RIGHT_PANEL_MIN, RIGHT_PANEL_MAX)
-  ))
-  const resizeSessionRef = useRef(null)
+  const leftPanelWidth = LEFT_PANEL_DEFAULT
+  const rightPanelWidth = RIGHT_PANEL_DEFAULT
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
   }, [theme])
-
-  useEffect(() => {
-    localStorage.setItem(LEFT_PANEL_STORAGE_KEY, String(leftPanelWidth))
-  }, [leftPanelWidth])
-
-  useEffect(() => {
-    localStorage.setItem(RIGHT_PANEL_STORAGE_KEY, String(rightPanelWidth))
-  }, [rightPanelWidth])
-
-  useEffect(() => {
-    function stopResize() {
-      if (!resizeSessionRef.current) return
-      resizeSessionRef.current = null
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-    }
-
-    function handlePointerMove(event) {
-      const session = resizeSessionRef.current
-      if (!session) return
-
-      const deltaX = event.clientX - session.startX
-
-      if (session.side === 'left') {
-        setLeftPanelWidth(clamp(session.startWidth + deltaX, LEFT_PANEL_MIN, LEFT_PANEL_MAX))
-        return
-      }
-
-      setRightPanelWidth(clamp(session.startWidth - deltaX, RIGHT_PANEL_MIN, RIGHT_PANEL_MAX))
-    }
-
-    window.addEventListener('pointermove', handlePointerMove)
-    window.addEventListener('pointerup', stopResize)
-    window.addEventListener('pointercancel', stopResize)
-
-    return () => {
-      stopResize()
-      window.removeEventListener('pointermove', handlePointerMove)
-      window.removeEventListener('pointerup', stopResize)
-      window.removeEventListener('pointercancel', stopResize)
-    }
-  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -205,17 +143,10 @@ export default function App() {
     setActiveTab('details')
   }
 
-  function beginResize(side, event) {
-    if (window.innerWidth <= 1180) return
-
-    resizeSessionRef.current = {
-      side,
-      startX: event.clientX,
-      startWidth: side === 'left' ? leftPanelWidth : rightPanelWidth,
-    }
-
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
+  function beginResize() {
+    // Drag-resize is intentionally disabled to keep fixed full-width rails.
+    // If re-enabled, keep center area >= CENTER_PANEL_MIN to avoid text collapse.
+    void CENTER_PANEL_MIN
   }
 
   return (
@@ -249,10 +180,10 @@ export default function App() {
         <button
           type="button"
           className="panel-resizer left-resizer"
-          onPointerDown={(event) => beginResize('left', event)}
-          onDoubleClick={() => setLeftPanelWidth(LEFT_PANEL_DEFAULT)}
-          aria-label="Resize market board"
-          title="Drag to resize market board. Double-click to reset."
+          onPointerDown={beginResize}
+          disabled
+          aria-label="Market board divider"
+          title="Panel resize is locked."
         >
           <span />
         </button>
@@ -327,10 +258,10 @@ export default function App() {
         <button
           type="button"
           className="panel-resizer right-resizer"
-          onPointerDown={(event) => beginResize('right', event)}
-          onDoubleClick={() => setRightPanelWidth(RIGHT_PANEL_DEFAULT)}
-          aria-label="Resize briefing panel"
-          title="Drag to resize briefing panel. Double-click to reset."
+          onPointerDown={beginResize}
+          disabled
+          aria-label="Briefing panel divider"
+          title="Panel resize is locked."
         >
           <span />
         </button>
