@@ -8,8 +8,18 @@ import './styles/App.css'
 const MapView = lazy(() => import('./components/MapView'))
 const RightPanel = lazy(() => import('./components/RightPanel'))
 
-const LEFT_PANEL_DEFAULT = 320
-const RIGHT_PANEL_DEFAULT = 470
+const LEFT_PANEL_FALLBACK = 320
+const RIGHT_PANEL_FALLBACK = 470
+
+function readCssPxVar(name, fallback) {
+  if (typeof document === 'undefined') return fallback
+  const rawValue = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  const parsedValue = parseInt(rawValue, 10)
+  return Number.isFinite(parsedValue) ? parsedValue : fallback
+}
+
+const LEFT_PANEL_DEFAULT = readCssPxVar('--left-panel-width', LEFT_PANEL_FALLBACK)
+const RIGHT_PANEL_DEFAULT = readCssPxVar('--right-panel-width', RIGHT_PANEL_FALLBACK)
 const CENTER_PANEL_MIN = 620
 
 export default function App() {
@@ -181,7 +191,7 @@ export default function App() {
           type="button"
           className="panel-resizer left-resizer"
           onPointerDown={beginResize}
-          disabled
+          aria-disabled="true"
           aria-label="Market board divider"
           title="Panel resize is locked."
         >
@@ -259,7 +269,7 @@ export default function App() {
           type="button"
           className="panel-resizer right-resizer"
           onPointerDown={beginResize}
-          disabled
+          aria-disabled="true"
           aria-label="Briefing panel divider"
           title="Panel resize is locked."
         >
