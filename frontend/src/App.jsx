@@ -8,18 +8,6 @@ import './styles/App.css'
 const MapView = lazy(() => import('./components/MapView'))
 const RightPanel = lazy(() => import('./components/RightPanel'))
 
-const LEFT_PANEL_FALLBACK = 320
-const RIGHT_PANEL_FALLBACK = 470
-
-function readCssPxVar(name, fallback) {
-  if (typeof document === 'undefined') return fallback
-  const rawValue = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-  const parsedValue = parseInt(rawValue, 10)
-  return Number.isFinite(parsedValue) ? parsedValue : fallback
-}
-
-const LEFT_PANEL_DEFAULT = readCssPxVar('--left-panel-width', LEFT_PANEL_FALLBACK)
-const RIGHT_PANEL_DEFAULT = readCssPxVar('--right-panel-width', RIGHT_PANEL_FALLBACK)
 const CENTER_PANEL_MIN = 620
 
 export default function App() {
@@ -38,8 +26,6 @@ export default function App() {
   const [compareMode, setCompareMode] = useState(false)
   const [compareIds, setCompareIds] = useState([])
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const leftPanelWidth = LEFT_PANEL_DEFAULT
-  const rightPanelWidth = RIGHT_PANEL_DEFAULT
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -161,13 +147,7 @@ export default function App() {
 
   return (
     <div className={`app theme-${theme}`}>
-      <main
-        className="app-main"
-        style={{
-          '--left-panel-width': `${leftPanelWidth}px`,
-          '--right-panel-width': `${rightPanelWidth}px`,
-        }}
-      >
+      <main className="app-main">
         <section className="app-sidebar">
           <RankingsPanel
             rankings={rankings}
