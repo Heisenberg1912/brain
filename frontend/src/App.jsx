@@ -8,8 +8,6 @@ import './styles/App.css'
 const MapView = lazy(() => import('./components/MapView'))
 const RightPanel = lazy(() => import('./components/RightPanel'))
 
-const CENTER_PANEL_MIN = 620
-
 export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
   const [locations, setLocations] = useState({})
@@ -139,12 +137,6 @@ export default function App() {
     setActiveTab('details')
   }
 
-  function beginResize() {
-    // Drag-resize is intentionally disabled to keep fixed full-width rails.
-    // If re-enabled, keep center area >= CENTER_PANEL_MIN to avoid text collapse.
-    void CENTER_PANEL_MIN
-  }
-
   return (
     <div className={`app theme-${theme}`}>
       <main className="app-main">
@@ -170,7 +162,6 @@ export default function App() {
         <button
           type="button"
           className="panel-resizer left-resizer"
-          onPointerDown={beginResize}
           aria-disabled="true"
           aria-label="Market board divider"
           title="Panel resize is locked."
@@ -248,7 +239,6 @@ export default function App() {
         <button
           type="button"
           className="panel-resizer right-resizer"
-          onPointerDown={beginResize}
           aria-disabled="true"
           aria-label="Briefing panel divider"
           title="Panel resize is locked."
