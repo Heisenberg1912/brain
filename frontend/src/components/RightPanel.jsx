@@ -22,29 +22,34 @@ export default function RightPanel({
   rankings,
   hotspots,
   onClose,
+  panelMode,
+  selectedLocation,
+  onSelectLocation,
+  sortBy,
 }) {
-  const activeLocation = activeId ? locations[activeId] : null
-  const compareNames = compareIds.map((id) => locationLabel(locations[id], '')).filter(Boolean)
+  const isMacro = panelMode === 'macro'
+  const isCity = panelMode === 'city'
 
-  const contextTitle = compareIds.length >= 2
-    ? `Comparing ${compareIds.length} markets`
-    : activeLocation
-      ? locationLabel(activeLocation)
-      : 'National overview'
-
-  const contextSubtitle = compareIds.length >= 2
-    ? compareNames.join(' vs ') || 'Selected comparison set'
-    : activeLocation
-      ? locationSecondaryLabel(activeLocation)
-      : 'Pick a market or stay macro.'
+  const macroSubtitle = 'Pick a market or stay macro.'
+  const cityTitle = selectedLocation ? locationLabel(selectedLocation) : 'Market'
+  const citySubtitle = selectedLocation ? locationSecondaryLabel(selectedLocation) : ''
 
   return (
-    <aside className="right-panel glass">
+    <aside className={`right-panel glass right-panel--${panelMode}`}>
       <div className="right-panel-header">
         <div className="panel-context">
           <p className="eyebrow">Briefing</p>
-          <h2 className="display-heading">{contextTitle}</h2>
-          <span>{contextSubtitle || 'Market context'}</span>
+          {isMacro ? (
+            <>
+              <h2 className="display-heading">National Overview</h2>
+              <span>{macroSubtitle}</span>
+            </>
+          ) : (
+            <>
+              <h2 className="display-heading">{cityTitle}</h2>
+              <span>{citySubtitle || 'Market context'}</span>
+            </>
+          )}
         </div>
 
         <button className="context-reset" onClick={onClose}>
@@ -53,54 +58,78 @@ export default function RightPanel({
         </button>
       </div>
 
-      <div className="tabs">
-        {TABS.map((tab) => {
-          const Icon = tab.icon
-          return (
-            <button
-              key={tab.key}
-              className={`tab ${activeTab === tab.key ? 'active' : ''}`}
-              onClick={() => onTabChange(tab.key)}
-            >
-              <Icon size={16} />
-              <span>{tab.label}</span>
-            </button>
-          )
-        })}
-      </div>
+      {isCity ? (
+        <div className="tabs">
+          {TABS.map((tab) => {
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                className={`tab ${activeTab === tab.key ? 'active' : ''}`}
+                onClick={() => onTabChange(tab.key)}
+              >
+                <Icon size={16} />
+                <span>{tab.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
 
       <div className="right-panel-content">
-        {activeTab === 'details' ? (
-          <DetailsPanel
-            activeId={activeId}
-            locations={locations}
-            rankings={rankings}
-            hotspots={hotspots}
-          />
-        ) : null}
+        <div key={panelMode} className="right-panel-mode-layer">
+          {isMacro ? (
+            <DetailsPanel
+              activeId={null}
+              locations={locations}
+              rankings={rankings}
+              hotspots={hotspots}
+              onSelectLocation={onSelectLocation}
+              sortBy={sortBy}
+            />
+          ) : null}
 
-        {activeTab === 'compare' ? (
-          <CompareView
-            compareIds={compareIds}
-            locations={locations}
-          />
-        ) : null}
+          {isCity && activeTab === 'details' ? (
+            <DetailsPanel
+              activeId={activeId}
+              locations={locations}
+              rankings={rankings}
+              hotspots={hotspots}
+              onSelectLocation={onSelectLocation}
+              sortBy={sortBy}
+            />
+          ) : null}
 
-        {activeTab === 'chain' ? (
-          <BlockchainPanel
-            activeId={activeId}
-            locations={locations}
-          />
-        ) : null}
+          {isCity && activeTab === 'compare' ? (
+            compareIds.length >= 2 ? (
+              <CompareView
+                compareIds={compareIds}
+                locations={locations}
+              />
+            ) : (
+              <div className="compare-tab-placeholder">
+                <p className="muted-copy">Pin 2+ markets to compare</p>
+              </div>
+            )
+          ) : null}
 
-        {activeTab === 'ai' ? (
-          <AIChat
-            activeId={activeId}
-            compareIds={compareIds}
-            locations={locations}
-            isActive={activeTab === 'ai'}
-          />
-        ) : null}
+          {isCity && activeTab === 'chain' ? (
+            <BlockchainPanel
+              activeId={activeId}
+              locations={locations}
+            />
+          ) : null}
+
+          {isCity && activeTab === 'ai' ? (
+            <AIChat
+              activeId={activeId}
+              compareIds={compareIds}
+              locations={locations}
+              isActive={activeTab === 'ai'}
+            />
+          ) : null}
+        </div>
       </div>
     </aside>
   )

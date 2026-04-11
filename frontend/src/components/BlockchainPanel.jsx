@@ -121,7 +121,7 @@ export default function BlockchainPanel({ activeId, locations }) {
           <article className="bp-card compact">
             <span>Default network</span>
             <strong>{contractProfile?.default_network || 'N/A'}</strong>
-            <small>{compactText(contractProfile?.philosophy, 'Contract profile unavailable', 56)}</small>
+            <small>{String(contractProfile?.philosophy ?? '').trim() || 'Contract profile unavailable'}</small>
           </article>
           <article className="bp-card compact">
             <span>Supported chains</span>
@@ -141,7 +141,7 @@ export default function BlockchainPanel({ activeId, locations }) {
             <article key={network.key} className={`bp-card compact ${network.is_default ? 'highlight' : ''}`}>
               <span>{network.label}</span>
               <strong>{network.key}</strong>
-              <small>{compactText(network.positioning, '', 58)}</small>
+              <small>{String(network.positioning ?? '').trim()}</small>
             </article>
           ))}
           {networks.length === 0 ? <p className="empty-msg">No network metadata returned.</p> : null}

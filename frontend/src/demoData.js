@@ -1472,6 +1472,138 @@ export function getDemoValuationLogic(locationId) {
   return market ? clone({ location: market.name, location_id: market.id, logic: logicOut(market) }) : null
 }
 
+function valuationInputsFromMarket(market) {
+  const ph = market.price_history || []
+  const regionalCount = (market.regional_standards || []).length
+
+  let priceHistorySpanDays = 365
+  if (ph.length >= 2) {
+    if (ph[0] && typeof ph[0] === 'object' && ph[0].date) {
+      const first = new Date(ph[0].date)
+      const last = new Date(ph[ph.length - 1].date)
+      const calculated = Math.round((last - first) / (1000 * 60 * 60 * 24))
+      priceHistorySpanDays = Math.max(365, calculated)
+    } else {
+      const dates = PRICE_HISTORY_DATES.slice(0, ph.length)
+      if (dates.length >= 2) {
+        const first = new Date(dates[0])
+        const last = new Date(dates[dates.length - 1])
+        const calculated = Math.round((last - first) / (1000 * 60 * 60 * 24))
+        priceHistorySpanDays = Math.max(365, calculated)
+      }
+    }
+  }
+
+  const nearbyInfra = nearbyInfrastructureFor(market.id, 8)
+  const plannedInfra = nearbyInfra.filter((item) => item.status !== 'operational')
+  const transitNodes = nearbyInfra.filter((item) =>
+    ['metro_station', 'rail'].includes(item.infra_type),
+  )
+  const infraTypeCounts = nearbyInfra.reduce((accumulator, item) => {
+    accumulator[item.infra_type] = (accumulator[item.infra_type] || 0) + 1
+    return accumulator
+  }, {})
+  const dominantTypes = Object.entries(infraTypeCounts)
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 2)
+    .map(([type]) => type)
+
+  const nearestInfraKm = nearbyInfra[0]?.distance_km ?? null
+  const nearestTransitKm = transitNodes[0]?.distance_km ?? null
+  const highwayEntry = nearbyInfra.find((item) => item.infra_type === 'highway')
+  const metroEntry = nearbyInfra.find((item) => item.infra_type === 'metro_station')
+
+  return {
+    location: market.name,
+    location_id: market.id,
+    coverage: {
+      evidence_score: market.scores.data_confidence_score,
+      confidence_band: market.scores.data_confidence_band,
+      data_gaps: [],
+      masterplan_present: Boolean(market.masterplan?.version),
+      masterplan_history_count: 1,
+      price_history_points: ph.length,
+      price_history_span_days: priceHistorySpanDays,
+      census_present: Boolean(market.census?.population),
+      geo_profile_present: Boolean(market.geo),
+      nearby_infra_count: nearbyInfra.length,
+      regional_standard_count: regionalCount,
+    },
+    market: {
+      avg_price_per_sqft: market.avg_price_per_sqft,
+      latest_price_per_sqft: market.avg_price_per_sqft,
+      annualized_growth_pct: market.scores.annualized_growth_pct,
+      recent_12m_growth_pct: market.scores.recent_12m_growth_pct,
+      price_history_points: ph.length,
+      price_history_span_days: priceHistorySpanDays,
+      price_trend_direction: market.copy.price_trend_direction,
+      price_momentum_band: market.copy.price_momentum_band,
+    },
+    planning: {
+      zoning_type: market.zoning_type,
+      fsi: market.masterplan.fsi,
+      max_height_m: market.masterplan.max_height_m,
+      ground_coverage_pct: market.masterplan.ground_coverage_pct,
+      masterplan_version: market.masterplan.version,
+      market_tier: market.copy.market_tier,
+      validation_status: market.planning?.validation_status,
+      planning_context_version: market.planning?.version_tag,
+      location_intelligence_score: market.planning?.location_intelligence_score,
+    },
+    demand: {
+      population: market.census.population,
+      growth_rate_pct: market.census.growth_rate_pct,
+      density_per_sqkm: market.census.density_per_sqkm,
+      demand_pressure_score: market.scores.demand_pressure_score,
+      demand_profile: market.copy.demand_profile,
+    },
+    infrastructure: {
+      nearby_infra_count: nearbyInfra.length,
+      planned_infra_count: plannedInfra.length,
+      transit_node_count: transitNodes.length,
+      nearest_infra_km: nearestInfraKm,
+      nearest_transit_node_km: nearestTransitKm,
+      road_proximity_km: highwayEntry?.distance_km ?? null,
+      metro_proximity_km: metroEntry?.distance_km ?? null,
+      strategic_infra_score: market.scores.strategic_infra_score,
+      road_access_score: market.scores.road_access_score,
+      metro_access_score: market.scores.metro_access_score,
+      economic_access_score: market.scores.economic_access_score,
+      metro_station_count: infraTypeCounts.metro_station || 0,
+      economic_zone_count: infraTypeCounts.economic_zone || 0,
+      highway_count: infraTypeCounts.highway || 0,
+      dominant_types: dominantTypes.length ? dominantTypes : [],
+    },
+    site: {
+      terrain_class: market.geo.terrain_class,
+      terrain_slope_pct: market.geo.terrain_slope_pct,
+      flood_risk_score: market.geo.flood_risk_score,
+      heat_risk_score: market.geo.heat_risk_score,
+      climate_risk_score: market.geo.climate_risk_score,
+      site_risk_score: market.scores.site_risk_score,
+      site_risk_band: market.copy.site_risk_band,
+      terrain_constraint_score: market.scores.terrain_constraint_score,
+      climate_exposure_score: market.scores.climate_exposure_score,
+    },
+    model_inputs: {
+      infra_score: market.scores.infra_score,
+      price_trend_score: market.scores.price_trend_score,
+      annualized_growth_pct: market.scores.annualized_growth_pct,
+      recent_12m_growth_pct: market.scores.recent_12m_growth_pct,
+      zoning_favorability: market.scores.zoning_favorability,
+      road_access_score: market.scores.road_access_score,
+      metro_access_score: market.scores.metro_access_score,
+      demand_pressure_score: market.scores.demand_pressure_score,
+      planned_infra_count: plannedInfra.length,
+    },
+  }
+}
+
+export function getDemoValuationInputs(locationId) {
+  const market = getMarket(locationId)
+  return market ? clone(valuationInputsFromMarket(market)) : null
+}
+
 export function getDemoPrediction(locationId) {
   const market = getMarket(locationId)
   return market ? clone(predictionOut(market)) : null

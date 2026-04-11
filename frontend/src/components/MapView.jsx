@@ -6,6 +6,8 @@ import {
   GitCompareArrows,
   Layers3,
   LocateFixed,
+  Maximize2,
+  Minimize2,
   Network,
 } from 'lucide-react'
 import { fetchInfrastructure, fetchNearbyInfra } from '../api'
@@ -55,19 +57,25 @@ function tileConfig(mode) {
   }
 }
 
-function createLocationMarker({ score, zoning, active, compared, cityInitial }) {
+function createLocationMarker({ score, zoning, active, compared, cityInitial, isPulseOnce, touchSize }) {
   const hasScore = score > 0
   const markerColor = hasScore ? scoreHex(score) : '#6b7280'
   const zoningColor = ZONING_COLORS[zoning] || ZONING_COLORS.unclassified
   const displayText = hasScore ? Math.round(score) : (cityInitial || '·')
+  const pulseClass = isPulseOnce ? 'is-pulse-once' : ''
+  const touchClass = touchSize ? 'marker-shell--touch' : ''
+  const iconW = touchSize ? 48 : 40
+  const iconH = touchSize ? 56 : 52
+  const anchorX = touchSize ? 24 : 20
+  const anchorY = touchSize ? 24 : 20
 
   return L.divIcon({
     className: 'custom-location-marker',
-    iconSize: [40, 52],
-    iconAnchor: [20, 20],
+    iconSize: [iconW, iconH],
+    iconAnchor: [anchorX, anchorY],
     html: `
       <div
-        class="marker-shell ${active ? 'is-active' : ''} ${compared ? 'is-compared' : ''} ${hasScore ? 'has-score' : 'no-score'}"
+        class="marker-shell ${touchClass} ${active ? 'is-active' : ''} ${compared ? 'is-compared' : ''} ${hasScore ? 'has-score' : 'no-score'} ${pulseClass}"
         style="--mc:${markerColor}; --ring:${zoningColor};"
       >
         <span class="marker-score">${displayText}</span>
@@ -120,13 +128,29 @@ export default function MapView({
   const hasFitBoundsRef = useRef(false)
   const resizeObserverRef = useRef(null)
   const resizeFrameRef = useRef(null)
+  const pulseTimeoutRef = useRef(null)
 
   const [heatmapActive, setHeatmapActive] = useState(false)
+  const [pulseId, setPulseId] = useState(null)
   const [infrastructureActive, setInfrastructureActive] = useState(true)
   const [infrastructure, setInfrastructure] = useState([])
   const [infrastructureError, setInfrastructureError] = useState('')
   const [nearbyInfrastructure, setNearbyInfrastructure] = useState([])
   const [basemapMode, setBasemapMode] = useState(() => preferredBasemap(theme))
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [coverageOpen, setCoverageOpen] = useState(false)
+  const [isMobileMap, setIsMobileMap] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    const apply = () => {
+      setIsMobileMap(mq.matches)
+      if (!mq.matches) setCoverageOpen(false)
+    }
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
 
   const rankingById = useMemo(() => {
     const lookup = {}
@@ -169,6 +193,11 @@ export default function MapView({
       .sort((left, right) => right.count - left.count)
       .slice(0, 4)
   ), [infrastructureCounts])
+
+  const coverageTotal = useMemo(
+    () => Object.values(infrastructureCounts).reduce((sum, n) => sum + n, 0),
+    [infrastructureCounts],
+  )
   const activeScores = activeRanking
     ? [
         { key: 'land', label: 'Land', value: activeRanking.land_value_score },
@@ -343,6 +372,13 @@ export default function MapView({
     }
   }, [activeId])
 
+  useEffect(() => () => {
+    if (pulseTimeoutRef.current) {
+      clearTimeout(pulseTimeoutRef.current)
+      pulseTimeoutRef.current = null
+    }
+  }, [])
+
   useEffect(() => {
     const map = mapInstanceRef.current
     const layer = locationLayerRef.current
@@ -372,11 +408,21 @@ export default function MapView({
             active: location.id === activeId,
             compared: compareIds.includes(location.id),
             cityInitial,
+            isPulseOnce: location.id === pulseId,
+            touchSize: isMobileMap,
           }),
         },
       )
 
-      marker.on('click', () => onSelect(location.id))
+      marker.on('click', () => {
+        onSelect(location.id)
+        setPulseId(location.id)
+        if (pulseTimeoutRef.current) clearTimeout(pulseTimeoutRef.current)
+        pulseTimeoutRef.current = window.setTimeout(() => {
+          pulseTimeoutRef.current = null
+          setPulseId(null)
+        }, 300)
+      })
       const scoreLabel = hasScore ? `${Math.round(score)}/100` : 'No score yet'
       marker.bindTooltip(
         `<strong>${locationLabel(location)}</strong><br />${location.city ? `${location.city} · ` : ''}${formatLabel(location.zoning_type || 'unclassified')} zone<br />${formatLabel(sortBy)}: ${scoreLabel}`,
@@ -393,7 +439,7 @@ export default function MapView({
       map.fitBounds(bounds, { padding: [36, 36], animate: false, maxZoom: 11 })
       hasFitBoundsRef.current = true
     }
-  }, [mappedLocations, rankingById, sortBy, activeId, compareIds, onSelect])
+  }, [mappedLocations, rankingById, sortBy, activeId, compareIds, onSelect, pulseId, isMobileMap])
 
   useEffect(() => {
     const map = mapInstanceRef.current
@@ -493,26 +539,72 @@ export default function MapView({
     return () => cancelAnimationFrame(frame)
   }, [mappedLocations.length, activeId, compareIds.length, infrastructureActive, heatmapActive])
 
+  useEffect(() => {
+    const map = mapInstanceRef.current
+    if (!isMapUsable(map)) return
+
+    const frame = requestAnimationFrame(() => {
+      const currentMap = mapInstanceRef.current
+      if (isMapUsable(currentMap)) {
+        currentMap.invalidateSize({ pan: false, debounceMoveend: true })
+      }
+    })
+
+    return () => cancelAnimationFrame(frame)
+  }, [isFullscreen])
+
   return (
-    <div className={`map-view theme-${theme} basemap-${basemapMode}`}>
+    <div
+      className={`map-view theme-${theme} basemap-${basemapMode}${isFullscreen ? ' map-view--fullscreen' : ''}${isMobileMap ? ' map-view--mobile' : ''}`}
+    >
       <div ref={mapRef} className="map-element" />
 
-      <div className="map-overlay top-left glass">
-        <div className="lens-head">
-          <div>
-            <p className="overlay-label">Active lens</p>
-            <h3>{formatLabel(sortBy)}</h3>
+      <div className="map-left-overlay-stack">
+        <div className="map-overlay lens-panel glass">
+          <div className="lens-head">
+            <div>
+              <p className="overlay-label">Active lens</p>
+              <h3>{formatLabel(sortBy)}</h3>
+            </div>
+            <span className="lens-pill">{rankings.length || mappedLocations.length}</span>
           </div>
-          <span className="lens-pill">{rankings.length || mappedLocations.length}</span>
+          <div className="lens-scale" aria-hidden>
+            <span className="lens-scale-fill" />
+          </div>
+          <div className="lens-scale-labels">
+            <span>Low</span>
+            <span>Mid</span>
+            <span>High</span>
+          </div>
         </div>
-        <div className="lens-scale" aria-hidden>
-          <span className="lens-scale-fill" />
-        </div>
-        <div className="lens-scale-labels">
-          <span>Low</span>
-          <span>Mid</span>
-          <span>High</span>
-        </div>
+
+        {!activeLocation ? (
+          <div className="map-overlay watchlist-panel glass">
+            <p className="overlay-label">Hotspot watchlist</p>
+            <h3>Emerging corridors</h3>
+            <div className="hotspot-stack">
+              {spotlightHotspots.map((hotspot) => (
+                <button
+                  key={hotspot.cluster_id}
+                  className="hotspot-card"
+                  onClick={() => {
+                    const firstLocation = hotspot.locations?.[0]
+                    if (firstLocation?.location_id) onSelect(firstLocation.location_id)
+                  }}
+                >
+                  <div>
+                    <strong>{formatLabel(hotspot.label)}</strong>
+                    <span>{hotspot.cluster_size} markets</span>
+                  </div>
+                  <b>{hotspot.hotspot_score.toFixed(0)}</b>
+                </button>
+              ))}
+              {spotlightHotspots.length === 0 ? (
+                <p className="overlay-muted">Hotspots will appear here.</p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="map-overlay-controls glass">
@@ -555,87 +647,78 @@ export default function MapView({
         </button>
       </div>
 
-      <div className="map-overlay bottom-left glass">
-        <div className="overlay-section-title">
-          <Layers3 size={16} />
-          <span>Coverage</span>
-        </div>
-        {infrastructureError ? <p className="overlay-muted">{infrastructureError}</p> : null}
-        {coverageItems.length ? (
-          <div className="coverage-chip-grid">
-            {coverageItems.map((item) => (
-              <div key={item.key} className="coverage-chip">
-                <span className="infra-dot" style={{ backgroundColor: item.color }} />
-                <span>{item.label}</span>
-                <strong>{item.count}</strong>
-              </div>
-            ))}
+      <div
+        className={`map-overlay bottom-left glass map-coverage-panel${isMobileMap && !coverageOpen ? ' map-coverage-panel--collapsed' : ''}`}
+      >
+        {isMobileMap ? (
+          <button
+            type="button"
+            className="coverage-toggle"
+            aria-expanded={coverageOpen}
+            onClick={() => setCoverageOpen((open) => !open)}
+          >
+            <Layers3 size={16} aria-hidden />
+            <span>Coverage</span>
+            <strong>{coverageTotal}</strong>
+          </button>
+        ) : (
+          <div className="overlay-section-title">
+            <Layers3 size={16} />
+            <span>Coverage</span>
           </div>
-        ) : null}
-        {!infrastructureError && coverageItems.length === 0 ? (
-          <p className="overlay-muted">Infrastructure counts will appear once overlays load.</p>
-        ) : null}
-      </div>
-
-      <div className="map-overlay bottom-right glass">
-        {activeLocation ? (
+        )}
+        {(!isMobileMap || coverageOpen) ? (
           <>
-            <p className="overlay-label">Active market</p>
-            <h3>{locationLabel(activeLocation)}</h3>
-            <p className="overlay-copy">
-              {formatLabel(activeLocation.zoning_type)} zone
-              {activeLocation.city ? ` • ${activeLocation.city}` : ''}.
-            </p>
-            {activeScores.length ? (
-              <div className="active-score-strip">
-                {activeScores.map((item) => (
-                  <div key={item.key} className="mini-score-chip">
+            {infrastructureError ? <p className="overlay-muted">{infrastructureError}</p> : null}
+            {coverageItems.length ? (
+              <div className="coverage-chip-grid">
+                {coverageItems.map((item) => (
+                  <div key={item.key} className="coverage-chip">
+                    <span className="infra-dot" style={{ backgroundColor: item.color }} />
                     <span>{item.label}</span>
-                    <strong style={{ color: scoreHex(item.value) }}>{item.value.toFixed(0)}</strong>
+                    <strong>{item.count}</strong>
                   </div>
                 ))}
               </div>
             ) : null}
-            <div className="catchment-list">
-              {nearbyInfrastructure.slice(0, 4).map((item) => (
-                <div key={item.id} className="catchment-row">
-                  <span>{item.name}</span>
-                  <strong>{formatDistance(item.distance_km)}</strong>
+            {!infrastructureError && coverageItems.length === 0 ? (
+              <p className="overlay-muted">Infrastructure counts will appear once overlays load.</p>
+            ) : null}
+          </>
+        ) : null}
+      </div>
+
+      {activeLocation ? (
+        <div className="map-overlay bottom-right glass">
+          <p className="overlay-label">Active market</p>
+          <h3>{locationLabel(activeLocation)}</h3>
+          <p className="overlay-copy">
+            {formatLabel(activeLocation.zoning_type)} zone
+            {activeLocation.city ? ` • ${activeLocation.city}` : ''}.
+          </p>
+          {activeScores.length ? (
+            <div className="active-score-strip">
+              {activeScores.map((item) => (
+                <div key={item.key} className="mini-score-chip">
+                  <span>{item.label}</span>
+                  <strong style={{ color: scoreHex(item.value) }}>{item.value.toFixed(0)}</strong>
                 </div>
               ))}
-              {nearbyInfrastructure.length === 0 ? (
-                <p className="overlay-muted">No nearby infrastructure was returned for this market.</p>
-              ) : null}
             </div>
-          </>
-        ) : (
-          <>
-            <p className="overlay-label">Hotspot watchlist</p>
-            <h3>Emerging corridors</h3>
-            <div className="hotspot-stack">
-              {spotlightHotspots.map((hotspot) => (
-                <button
-                  key={hotspot.cluster_id}
-                  className="hotspot-card"
-                  onClick={() => {
-                    const firstLocation = hotspot.locations?.[0]
-                    if (firstLocation?.location_id) onSelect(firstLocation.location_id)
-                  }}
-                >
-                  <div>
-                    <strong>{formatLabel(hotspot.label)}</strong>
-                    <span>{hotspot.cluster_size} markets</span>
-                  </div>
-                  <b>{hotspot.hotspot_score.toFixed(0)}</b>
-                </button>
-              ))}
-              {spotlightHotspots.length === 0 ? (
-                <p className="overlay-muted">Hotspots will appear here.</p>
-              ) : null}
-            </div>
-          </>
-        )}
-      </div>
+          ) : null}
+          <div className="catchment-list">
+            {nearbyInfrastructure.slice(0, 4).map((item) => (
+              <div key={item.id} className="catchment-row">
+                <span>{item.name}</span>
+                <strong>{formatDistance(item.distance_km)}</strong>
+              </div>
+            ))}
+            {nearbyInfrastructure.length === 0 ? (
+              <p className="overlay-muted">No nearby infrastructure was returned for this market.</p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {compareIds.length > 0 ? (
         <div className="compare-shelf glass">
@@ -649,6 +732,17 @@ export default function MapView({
           </button>
         </div>
       ) : null}
+
+      <button
+        type="button"
+        className={`map-fullscreen-btn ${isFullscreen ? 'active' : ''}`}
+        aria-pressed={isFullscreen}
+        aria-label={isFullscreen ? 'Exit fullscreen map' : 'Expand map to full width'}
+        title={isFullscreen ? 'Exit fullscreen map' : 'Expand map to full width'}
+        onClick={() => setIsFullscreen((current) => !current)}
+      >
+        {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+      </button>
     </div>
   )
 }

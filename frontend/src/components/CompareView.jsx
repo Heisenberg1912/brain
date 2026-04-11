@@ -51,7 +51,7 @@ function metricValue(row, key) {
   return row.components?.[key] ?? 0
 }
 
-export default function CompareView({ compareIds, locations }) {
+export default function CompareView({ compareIds, locations, hideHeroHeading = false }) {
   const [comparison, setComparison] = useState([])
   const [aiSummary, setAiSummary] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -123,7 +123,17 @@ export default function CompareView({ compareIds, locations }) {
     }
   }, [comparison])
 
-  const chartOptions = {
+  const [isMobileCompare, setIsMobileCompare] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    const apply = () => setIsMobileCompare(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+
+  const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     scales: {
@@ -134,7 +144,11 @@ export default function CompareView({ compareIds, locations }) {
         angleLines: { color: 'rgba(148, 163, 184, 0.16)' },
         pointLabels: {
           color: '#94a3b8',
-          font: { family: 'Montserrat', size: 10, weight: '600' },
+          font: {
+            family: 'Montserrat',
+            size: isMobileCompare ? 8 : 10,
+            weight: '600',
+          },
         },
         ticks: { display: false },
       },
@@ -144,13 +158,17 @@ export default function CompareView({ compareIds, locations }) {
         position: 'bottom',
         labels: {
           color: '#94a3b8',
-          font: { family: 'Montserrat', size: 11, weight: '600' },
+          font: {
+            family: 'Montserrat',
+            size: isMobileCompare ? 9 : 11,
+            weight: '600',
+          },
           usePointStyle: true,
           boxWidth: 8,
         },
       },
     },
-  }
+  }), [isMobileCompare])
 
   const leaderboard = useMemo(() => {
     if (!comparison.length) return []
@@ -185,10 +203,20 @@ export default function CompareView({ compareIds, locations }) {
 
   return (
     <div className="compare-container">
-      <section className="compare-hero">
+      <div className="compare-chip-scroll" aria-label="Markets in comparison">
+        {compareNames.map((name) => (
+          <span key={name} className="compare-market-chip">{name}</span>
+        ))}
+      </div>
+
+      <section className={`compare-hero${hideHeroHeading ? ' compare-hero--compact' : ''}`}>
         <div>
-          <p className="eyebrow">Comparison cockpit</p>
-          <h3>{compareNames.join(' vs ') || 'Selected markets'}</h3>
+          {hideHeroHeading ? null : (
+            <>
+              <p className="eyebrow">Comparison cockpit</p>
+              <h3>{compareNames.join(' vs ') || 'Selected markets'}</h3>
+            </>
+          )}
           <p>{compactText(aiSummary?.summary, 'Score, momentum, infrastructure, and density side by side.', 100)}</p>
         </div>
 

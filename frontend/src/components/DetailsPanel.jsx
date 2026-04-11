@@ -4,6 +4,7 @@ import {
   BarChart3,
   Building2,
   ChevronDown,
+  ChevronRight,
   CloudSun,
   Gauge,
   MapPin,
@@ -16,10 +17,12 @@ import {
   analyzeAI,
   fetchIntelligence,
   fetchLocationDetail,
+  fetchNearbyInfra,
   fetchPlanningContext,
   fetchPrediction,
   fetchScore,
   fetchValuationCore,
+  fetchValuationInputs,
   fetchValuationLogic,
 } from '../api'
 import {
@@ -202,7 +205,15 @@ function SignalList({ title, items, tone = 'neutral', isOpen, onToggle }) {
   )
 }
 
-export default function DetailsPanel({ activeId, locations, rankings, hotspots }) {
+export default function DetailsPanel({
+  activeId,
+  locations,
+  rankings,
+  hotspots,
+  onSelectLocation,
+  sortBy,
+  suppressMacroHero = false,
+}) {
   const [payload, setPayload] = useState({
     detail: null,
     score: null,
@@ -223,6 +234,61 @@ export default function DetailsPanel({ activeId, locations, rankings, hotspots }
     opportunities: false,
     ai: true,
   })
+  const [moreDetailsOpen, setMoreDetailsOpen] = useState(false)
+  const [moreDetailsInfra, setMoreDetailsInfra] = useState([])
+  const [moreDetailsInfraLoading, setMoreDetailsInfraLoading] = useState(false)
+  const [moreDetailsInfraError, setMoreDetailsInfraError] = useState('')
+  const [valuationInputsSnapshot, setValuationInputsSnapshot] = useState(null)
+  const [valuationInputsLoading, setValuationInputsLoading] = useState(false)
+  const [valuationInputsError, setValuationInputsError] = useState('')
+
+  useEffect(() => {
+    setMoreDetailsOpen(false)
+    setMoreDetailsInfra([])
+    setMoreDetailsInfraError('')
+    setValuationInputsSnapshot(null)
+    setValuationInputsError('')
+  }, [activeId])
+
+  useEffect(() => {
+    if (!moreDetailsOpen || !activeId) return
+
+    let cancelled = false
+    setMoreDetailsInfraLoading(true)
+    setValuationInputsLoading(true)
+    setMoreDetailsInfraError('')
+    setValuationInputsError('')
+
+    fetchNearbyInfra(activeId, 8)
+      .then((infra) => {
+        if (cancelled) return
+        setMoreDetailsInfra(Array.isArray(infra) ? infra : [])
+      })
+      .catch((error) => {
+        console.error(error)
+        if (!cancelled) setMoreDetailsInfraError('Could not load nearby infrastructure.')
+      })
+      .finally(() => {
+        if (!cancelled) setMoreDetailsInfraLoading(false)
+      })
+
+    fetchValuationInputs(activeId)
+      .then((inputs) => {
+        if (cancelled) return
+        setValuationInputsSnapshot(inputs)
+      })
+      .catch((error) => {
+        console.error(error)
+        if (!cancelled) setValuationInputsError('Could not load valuation inputs.')
+      })
+      .finally(() => {
+        if (!cancelled) setValuationInputsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [moreDetailsOpen, activeId])
 
   useEffect(() => {
     if (!activeId) {
@@ -377,13 +443,15 @@ export default function DetailsPanel({ activeId, locations, rankings, hotspots }
   if (!activeId) {
     return (
       <div className="details-overview stagger-children">
-        <section className="hero-card overview-hero">
-          <div>
-            <p className="eyebrow">National overview</p>
-            <h3>Pick a market to decode it.</h3>
-          </div>
-          <p>Open any market to see how the score is built, how the masterplan is translated, and where the next move sits.</p>
-        </section>
+        {!suppressMacroHero ? (
+          <section className="hero-card overview-hero">
+            <div>
+              <p className="eyebrow">National overview</p>
+              <h3>Pick a market to decode it.</h3>
+            </div>
+            <p>Open any market to see how the score is built, how the masterplan is translated, and where the next move sits.</p>
+          </section>
+        ) : null}
 
         <section className="overview-grid">
           <ScoreTile label="Tracked markets" value={formatNumber(rankings.length || Object.keys(locations).length)} />
@@ -445,6 +513,36 @@ export default function DetailsPanel({ activeId, locations, rankings, hotspots }
             {overviewHotspots.length === 0 ? <p className="muted-copy">Hotspot clustering is not available yet.</p> : null}
           </div>
         </section>
+
+        {rankings[0] && locations[rankings[0].location_id] ? (
+          <section className="details-section more-details-macro-wrap">
+            <button
+              type="button"
+              className="more-details-macro-teaser"
+              onClick={() => onSelectLocation?.(rankings[0].location_id)}
+            >
+              <div className="more-details-teaser-copy">
+                <span className="eyebrow">More details</span>
+                <strong>
+                  {rankings[0].location}
+                  <span className="more-details-teaser-score">
+                    {rankings[0].land_value_score != null
+                      ? `${Number(rankings[0].land_value_score).toFixed(0)} land`
+                      : ''}
+                  </span>
+                </strong>
+                <p className="muted-copy">
+                  Top market by {formatLabel(sortBy || 'land_value_score')}
+                  {locations[rankings[0].location_id]?.city
+                    ? ` · ${locations[rankings[0].location_id].city}`
+                    : ''}
+                  . Open the full city briefing.
+                </p>
+              </div>
+              <ChevronRight size={20} className="more-details-teaser-arrow" aria-hidden />
+            </button>
+          </section>
+        ) : null}
       </div>
     )
   }
@@ -458,7 +556,6 @@ export default function DetailsPanel({ activeId, locations, rankings, hotspots }
   const displayedLogic = logic?.logic || core?.logic
   const selectedName = locationLabel(selectedLocation || detail.location)
   const locationMeta = locationSecondaryLabel(selectedLocation || detail.location)
-  const nearbyInfrastructure = detail.nearby_infrastructure || []
   const weightedComponents = displayedLogic?.weighted_components || []
   const weightedScore = numericValue(displayedLogic?.weighted_score ?? core?.scores?.overall_favorability_score)
   const weightedBand = displayedLogic?.weighted_band || core?.positioning?.favorability_band || 'N/A'
@@ -807,25 +904,6 @@ export default function DetailsPanel({ activeId, locations, rankings, hotspots }
             ))}
           </div>
         </article>
-
-        <article className="details-section">
-          <div className="section-heading">
-            <Zap size={18} />
-            <h4>Nearby infrastructure</h4>
-          </div>
-          <div className="catchment-list large">
-            {nearbyInfrastructure.slice(0, 5).map((item, index) => (
-              <div key={`${item.name}-${item.distance_km}-${index}`} className="catchment-row">
-                <div>
-                  <strong>{item.name}</strong>
-                  <span>{formatLabel(item.infra_type)} • {formatLabel(item.status)}</span>
-                </div>
-                <strong>{formatDistance(item.distance_km)}</strong>
-              </div>
-            ))}
-            {nearbyInfrastructure.length === 0 ? <p className="muted-copy">No nearby infrastructure was returned for this location.</p> : null}
-          </div>
-        </article>
       </section>
 
       <section className="signal-stack">
@@ -850,6 +928,164 @@ export default function DetailsPanel({ activeId, locations, rankings, hotspots }
           isOpen={expandedPanels.opportunities}
           onToggle={() => togglePanel('opportunities')}
         />
+      </section>
+
+      <section className="details-section more-details-section">
+        <button
+          type="button"
+          className="more-details-toggle"
+          onClick={() => setMoreDetailsOpen((open) => !open)}
+          aria-expanded={moreDetailsOpen}
+        >
+          <span>{moreDetailsOpen ? 'Less details ↑' : 'More details ↓'}</span>
+          <ChevronDown size={16} className={`more-details-chevron ${moreDetailsOpen ? 'is-open' : ''}`} />
+        </button>
+        <div className={`more-details-collapse ${moreDetailsOpen ? 'is-open' : ''}`}>
+          <div className="more-details-inner">
+            {(moreDetailsInfraLoading || valuationInputsLoading) && moreDetailsOpen ? (
+              <div className="more-details-loading"><span className="spinner" /></div>
+            ) : null}
+
+            <div className="more-details-subblock">
+              <div className="section-heading compact">
+                <Zap size={16} />
+                <h4>Nearby infrastructure</h4>
+              </div>
+              {moreDetailsInfraError ? <p className="panel-inline-error">{moreDetailsInfraError}</p> : null}
+              <div className="catchment-list large">
+                {moreDetailsInfra.map((item, index) => (
+                  <div key={`${item.name}-${item.distance_km}-${index}`} className="catchment-row">
+                    <div>
+                      <strong>{item.name}</strong>
+                      <span>{formatLabel(item.infra_type)} • {formatLabel(item.status)}</span>
+                    </div>
+                    <strong>{formatDistance(item.distance_km)}</strong>
+                  </div>
+                ))}
+                {!moreDetailsInfraLoading && moreDetailsInfra.length === 0 && !moreDetailsInfraError ? (
+                  <p className="muted-copy">No nearby infrastructure was returned for this location.</p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="more-details-subblock">
+              <div className="section-heading compact">
+                <BarChart3 size={16} />
+                <h4>Valuation input snapshot</h4>
+              </div>
+              {valuationInputsError ? <p className="panel-inline-error">{valuationInputsError}</p> : null}
+              {valuationInputsSnapshot ? (
+                <>
+                  <p className="more-details-snapshot-label">Market inputs</p>
+                  <div className="market-mini-grid">
+                    <div className="mini-data-card">
+                      <span>Avg. price / sqft</span>
+                      <strong>{formatCurrency(valuationInputsSnapshot.market?.avg_price_per_sqft)}</strong>
+                    </div>
+                    <div className="mini-data-card">
+                      <span>Annualized growth</span>
+                      <strong>{formatPercent(valuationInputsSnapshot.market?.annualized_growth_pct)}</strong>
+                    </div>
+                    <div className="mini-data-card">
+                      <span>12m growth</span>
+                      <strong>{formatPercent(valuationInputsSnapshot.market?.recent_12m_growth_pct)}</strong>
+                    </div>
+                    <div className="mini-data-card">
+                      <span>Price trend</span>
+                      <strong>{formatLabel(valuationInputsSnapshot.market?.price_trend_direction)}</strong>
+                    </div>
+                  </div>
+                  <p className="more-details-snapshot-label">Site inputs</p>
+                  <div className="market-mini-grid">
+                    <div className="mini-data-card">
+                      <span>Terrain</span>
+                      <strong>{formatLabel(valuationInputsSnapshot.site?.terrain_class)}</strong>
+                    </div>
+                    <div className="mini-data-card">
+                      <span>Site risk</span>
+                      <strong>{formatPercent(valuationInputsSnapshot.site?.site_risk_score, 0)}</strong>
+                    </div>
+                    <div className="mini-data-card">
+                      <span>Flood risk</span>
+                      <strong>{formatPercent(valuationInputsSnapshot.site?.flood_risk_score, 0)}</strong>
+                    </div>
+                    <div className="mini-data-card">
+                      <span>Climate risk</span>
+                      <strong>{formatPercent(valuationInputsSnapshot.site?.climate_risk_score, 0)}</strong>
+                    </div>
+                  </div>
+                  <p className="more-details-snapshot-label">Model inputs</p>
+                  <div className="market-mini-grid">
+                    <div className="mini-data-card">
+                      <span>Infra score</span>
+                      <strong>{numericValue(valuationInputsSnapshot.model_inputs?.infra_score).toFixed(0)}</strong>
+                    </div>
+                    <div className="mini-data-card">
+                      <span>Price trend score</span>
+                      <strong>{numericValue(valuationInputsSnapshot.model_inputs?.price_trend_score).toFixed(0)}</strong>
+                    </div>
+                    <div className="mini-data-card">
+                      <span>Zoning favorability</span>
+                      <strong>{numericValue(valuationInputsSnapshot.model_inputs?.zoning_favorability).toFixed(0)}</strong>
+                    </div>
+                  </div>
+                </>
+              ) : !valuationInputsLoading && !valuationInputsError ? (
+                <p className="muted-copy">Valuation inputs are not available.</p>
+              ) : null}
+            </div>
+
+            <div className="more-details-subblock">
+              <div className="section-heading compact">
+                <Gauge size={16} />
+                <h4>Score drivers</h4>
+              </div>
+              {displayedLogic?.weighted_components?.length ? (
+                <ul className="more-details-logic-list">
+                  {displayedLogic.weighted_components.map((component) => (
+                    <li key={component.key}>
+                      <div>
+                        <strong>{component.label}</strong>
+                        <span>{numericValue(component.weight * 100).toFixed(0)}% weight · {numericValue(component.value).toFixed(0)} score</span>
+                      </div>
+                      <span className="more-details-contrib">+{numericValue(component.contribution).toFixed(1)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {displayedLogic?.rule_hits?.length ? (
+                <ul className="more-details-rule-list">
+                  {displayedLogic.rule_hits.map((rule) => (
+                    <li key={rule.code}>
+                      <strong>{formatLabel(rule.code)}</strong>
+                      <span className={`rule-hit-pill ${rule.effect}`}>{formatLabel(rule.effect)}</span>
+                      {rule.detail ? <p className="muted-copy">{rule.detail}</p> : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {[
+                { title: 'Land value pillar', metric: core?.land_value },
+                { title: 'Development potential pillar', metric: core?.development_potential },
+                { title: 'Future appreciation pillar', metric: core?.future_appreciation },
+              ].map(({ title, metric }) => (
+                metric?.drivers?.length ? (
+                  <div key={title} className="more-details-pillar">
+                    <h5 className="more-details-subtitle">{title}</h5>
+                    <ul className="more-details-driver-list">
+                      {metric.drivers.map((driver) => (
+                        <li key={driver.key}>
+                          <span>{driver.label}</span>
+                          <strong>{driver.value != null ? numericValue(driver.value).toFixed(0) : '—'}</strong>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null
+              ))}
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="details-section accordion-section">
