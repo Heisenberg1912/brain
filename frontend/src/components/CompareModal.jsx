@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import CompareView from './CompareView'
+import { useDialogFocusTrap } from '../hooks/useDialogFocusTrap'
 import { locationLabel } from '../utils'
 import './CompareModal.css'
 
@@ -10,6 +11,7 @@ export default function CompareModal({ compareIds, locations, onClose }) {
   const [isVisible, setIsVisible] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
   const exitTimerRef = useRef(null)
+  const dialogRef = useRef(null)
 
   useEffect(() => {
     const id = requestAnimationFrame(() => {
@@ -41,6 +43,8 @@ export default function CompareModal({ compareIds, locations, onClose }) {
     }, ANIM_MS)
   }
 
+  useDialogFocusTrap(dialogRef, handleDismiss)
+
   const rootClass = [
     'compare-modal',
     isVisible && !isExiting ? 'compare-modal--open' : '',
@@ -51,6 +55,7 @@ export default function CompareModal({ compareIds, locations, onClose }) {
 
   return (
     <div
+      ref={dialogRef}
       className={rootClass}
       role="dialog"
       aria-modal="true"

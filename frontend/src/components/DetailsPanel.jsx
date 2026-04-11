@@ -259,24 +259,30 @@ export default function DetailsPanel({
     setMoreDetailsInfraError('')
     setValuationInputsError('')
 
-    Promise.all([fetchNearbyInfra(activeId, 8), fetchValuationInputs(activeId)])
-      .then(([infra, inputs]) => {
+    fetchNearbyInfra(activeId, 8)
+      .then((infra) => {
         if (cancelled) return
         setMoreDetailsInfra(Array.isArray(infra) ? infra : [])
+      })
+      .catch((error) => {
+        console.error(error)
+        if (!cancelled) setMoreDetailsInfraError('Could not load nearby infrastructure.')
+      })
+      .finally(() => {
+        if (!cancelled) setMoreDetailsInfraLoading(false)
+      })
+
+    fetchValuationInputs(activeId)
+      .then((inputs) => {
+        if (cancelled) return
         setValuationInputsSnapshot(inputs)
       })
       .catch((error) => {
         console.error(error)
-        if (!cancelled) {
-          setMoreDetailsInfraError('Could not load nearby infrastructure.')
-          setValuationInputsError('Could not load valuation inputs.')
-        }
+        if (!cancelled) setValuationInputsError('Could not load valuation inputs.')
       })
       .finally(() => {
-        if (!cancelled) {
-          setMoreDetailsInfraLoading(false)
-          setValuationInputsLoading(false)
-        }
+        if (!cancelled) setValuationInputsLoading(false)
       })
 
     return () => {

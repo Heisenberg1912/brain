@@ -437,11 +437,11 @@
 }
 
 .marker-shell.is-active.is-pulse-once {
-  animation: bubblePulseOnce 0.3s ease forwards;
+  animation: bubble-pulse-once 0.3s ease forwards;
 }
 
 .marker-shell.is-pulse-once:not(.is-active) {
-  animation: bubblePulseOnce 0.3s ease forwards;
+  animation: bubble-pulse-once 0.3s ease forwards;
 }
 
 .marker-shell.is-active .marker-score {
@@ -467,7 +467,7 @@
   50% { box-shadow: 0 0 0 6px rgba(241, 185, 107, 0.1), 0 6px 24px rgba(0, 0, 0, 0.6); }
 }
 
-@keyframes bubblePulseOnce {
+@keyframes bubble-pulse-once {
   0% {
     transform: scale(1);
   }

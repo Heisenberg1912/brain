@@ -180,7 +180,16 @@ export default function RankingsPanel({
                   <article
                     key={row.location_id}
                     className={`ranking-card ${isActive ? 'active' : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open ${row.location}, rank ${row.rank}`}
                     onClick={() => onSelect(row.location_id)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        onSelect(row.location_id)
+                      }
+                    }}
                   >
                     <div className="ranking-card-head">
                       <div className="ranking-title-wrap">

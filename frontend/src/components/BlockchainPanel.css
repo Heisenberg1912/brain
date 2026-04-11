@@ -9,7 +9,7 @@
 }
 
 .blockchain-panel :where(h1, h2, h3, h4, p, span, strong, small, a, .empty-msg) {
-  word-break: break-word;
+  word-break: normal;
   overflow-wrap: break-word;
   white-space: normal;
 }

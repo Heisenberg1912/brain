@@ -95,18 +95,18 @@
 
 .right-panel-mode-layer {
   min-height: 0;
-  animation: modeEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: mode-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .right-panel-mode-layer > * {
-  animation: tabEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: tab-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .compare-tab-placeholder {
   padding: 1rem 0.15rem 0.5rem;
 }
 
-@keyframes modeEnter {
+@keyframes mode-enter {
   from {
     opacity: 0;
     transform: translateX(8px);
@@ -117,7 +117,7 @@
   }
 }
 
-@keyframes tabEnter {
+@keyframes tab-enter {
   from {
     opacity: 0;
     transform: translateY(8px);

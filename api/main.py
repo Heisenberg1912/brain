@@ -14,6 +14,8 @@ _FRONTEND_DIST = _REPO_ROOT / "frontend" / "dist"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title="BuiltAttic Brain", version="0.1.0")
 
 app.add_middleware(
@@ -53,7 +55,12 @@ if _FRONTEND_DIST.is_dir():
         StaticFiles(directory=str(_FRONTEND_DIST), html=True),
         name="frontend",
     )
+    logger.info("Serving frontend static files from %s", _FRONTEND_DIST)
 else:
+    logger.info(
+        "Frontend dist not found at %s; root path / will redirect to /docs",
+        _FRONTEND_DIST,
+    )
 
     @app.get("/")
     def root_no_build():

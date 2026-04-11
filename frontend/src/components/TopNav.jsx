@@ -62,6 +62,7 @@ export default function TopNav({
         <Search size={16} aria-hidden />
         <input
           type="search"
+          aria-label="Search city, corridor, or locality"
           placeholder="Search city, corridor, or locality"
           value={searchQuery}
           onChange={(event) => onSearchChange(event.target.value)}

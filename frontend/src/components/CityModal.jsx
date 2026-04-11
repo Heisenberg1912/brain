@@ -3,6 +3,7 @@ import { Bot, Boxes, Map, X } from 'lucide-react'
 import BlockchainPanel from './BlockchainPanel'
 import DetailsPanel from './DetailsPanel'
 import AIChat from './AIChat'
+import { useDialogFocusTrap } from '../hooks/useDialogFocusTrap'
 import { locationLabel, locationSecondaryLabel } from '../utils'
 import './CityModal.css'
 
@@ -30,6 +31,7 @@ export default function CityModal({
   const [isVisible, setIsVisible] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
   const exitTimerRef = useRef(null)
+  const dialogRef = useRef(null)
 
   useEffect(() => {
     const id = requestAnimationFrame(() => {
@@ -63,6 +65,8 @@ export default function CityModal({
     }, ANIM_MS)
   }
 
+  useDialogFocusTrap(dialogRef, handleDismiss)
+
   const rootClass = [
     'city-modal',
     isVisible && !isExiting ? 'city-modal--open' : '',
@@ -73,6 +77,7 @@ export default function CityModal({
 
   return (
     <div
+      ref={dialogRef}
       className={rootClass}
       role="dialog"
       aria-modal="true"

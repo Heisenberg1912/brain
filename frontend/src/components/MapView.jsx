@@ -195,8 +195,8 @@ export default function MapView({
   ), [infrastructureCounts])
 
   const coverageTotal = useMemo(
-    () => coverageItems.reduce((sum, item) => sum + item.count, 0),
-    [coverageItems],
+    () => Object.values(infrastructureCounts).reduce((sum, n) => sum + n, 0),
+    [infrastructureCounts],
   )
   const activeScores = activeRanking
     ? [
