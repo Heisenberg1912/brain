@@ -60,7 +60,7 @@
   justify-content: space-between;
   gap: 0.8rem;
   align-items: center;
-  padding: 0 0.1rem;
+  padding: 0 0.75rem;
 }
 
 .map-shell-toolbar {
