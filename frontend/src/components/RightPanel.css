@@ -93,8 +93,28 @@
   container-type: inline-size;
 }
 
-.right-panel-content > * {
+.right-panel-mode-layer {
+  min-height: 0;
+  animation: modeEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.right-panel-mode-layer > * {
   animation: tabEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.compare-tab-placeholder {
+  padding: 1rem 0.15rem 0.5rem;
+}
+
+@keyframes modeEnter {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes tabEnter {
@@ -108,7 +128,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .tab span,
   .context-reset span {
     display: none;

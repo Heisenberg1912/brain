@@ -46,20 +46,73 @@
   pointer-events: none;
 }
 
-.map-overlay.top-left {
+.map-left-overlay-stack {
+  position: absolute;
+  z-index: 500;
   top: 0.8rem;
   left: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-width: 18rem;
+  width: min(18rem, calc(100% - 1.6rem));
+  pointer-events: none;
+}
+
+/* Inner panels must not use position:absolute — that pulls them out of the flex
+   stack and stacks both at the same corner so the watchlist covers the lens. */
+.map-left-overlay-stack .map-overlay {
+  position: relative;
+  max-width: none;
+  width: 100%;
+  left: auto;
+  top: auto;
 }
 
 .map-overlay.bottom-left {
   left: 0.8rem;
   bottom: 0.8rem;
   max-width: 21rem;
+  pointer-events: auto;
 }
 
 .map-overlay.bottom-right {
   right: 0.8rem;
   bottom: 0.8rem;
+  pointer-events: auto;
+}
+
+.map-coverage-panel {
+  pointer-events: auto;
+}
+
+.coverage-toggle {
+  display: none;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  margin: 0 0 0.35rem;
+  border: none;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.coverage-toggle strong {
+  color: var(--text);
+  font-weight: 800;
+  margin-left: auto;
+}
+
+.coverage-toggle:hover,
+.coverage-toggle:active {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
 }
 
 .overlay-label {
@@ -232,7 +285,8 @@
   pointer-events: auto;
 }
 
-.hotspot-card:hover {
+.hotspot-card:hover,
+.hotspot-card:active {
   border-color: var(--border-strong);
 }
 
@@ -257,7 +311,8 @@
   transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.control-btn:hover {
+.control-btn:hover,
+.control-btn:active {
   transform: translateX(-2px);
 }
 
@@ -318,6 +373,13 @@
   overflow: visible;
 }
 
+.marker-shell--touch {
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
 .marker-shell {
   position: relative;
   width: 2.25rem;
@@ -362,13 +424,24 @@
 }
 
 .marker-shell.is-active {
-  transform: scale(1.22);
   background: #1c1c1c;
   border-color: var(--ring, #444);
   box-shadow:
     0 0 0 3px rgba(241, 185, 107, 0.22),
     0 6px 24px rgba(0, 0, 0, 0.6);
+}
+
+.marker-shell.is-active:not(.is-pulse-once) {
+  transform: scale(1.22);
   animation: marker-pulse 2.2s ease-in-out infinite;
+}
+
+.marker-shell.is-active.is-pulse-once {
+  animation: bubblePulseOnce 0.3s ease forwards;
+}
+
+.marker-shell.is-pulse-once:not(.is-active) {
+  animation: bubblePulseOnce 0.3s ease forwards;
 }
 
 .marker-shell.is-active .marker-score {
@@ -394,9 +467,71 @@
   50% { box-shadow: 0 0 0 6px rgba(241, 185, 107, 0.1), 0 6px 24px rgba(0, 0, 0, 0.6); }
 }
 
-@media (max-width: 900px) {
-  .map-overlay.top-left {
+@keyframes bubblePulseOnce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Zoom stack sits at bottom: 16px; expand clears it (bar height + breathing room). */
+.map-view .leaflet-bottom.leaflet-right {
+  bottom: 16px;
+  right: 16px;
+  margin: 0;
+}
+
+.map-view .leaflet-control-zoom a.leaflet-control-zoom-in {
+  margin-bottom: 3px;
+}
+
+.map-fullscreen-btn {
+  position: absolute;
+  z-index: 600;
+  right: 16px;
+  bottom: calc(16px + 4.375rem + 1rem);
+  width: 2.65rem;
+  height: 2.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.map-fullscreen-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+.map-fullscreen-btn.active {
+  border-color: rgba(241, 185, 107, 0.35);
+  background: rgba(241, 185, 107, 0.12);
+  color: var(--text);
+}
+
+@media (max-width: 1024px) {
+  .map-left-overlay-stack {
     max-width: 15rem;
+    width: min(15rem, calc(100% - 1.6rem));
   }
 
   .map-overlay.bottom-left {
@@ -414,9 +549,52 @@
   }
 }
 
-@media (max-width: 720px) {
-  .map-overlay.top-left {
+@media (max-width: 768px) {
+  .map-view--mobile .map-left-overlay-stack {
+    display: none;
+  }
+
+  .map-view--mobile .map-fullscreen-btn {
+    display: none;
+  }
+
+  /* Sit above Leaflet zoom (2× ~44px buttons + chrome + bottom offset) */
+  .map-view--mobile .map-overlay-controls {
+    top: auto;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px + 7.25rem + 10px);
+    right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  .map-view--mobile .map-overlay.bottom-left {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    bottom: max(0.65rem, env(safe-area-inset-bottom));
+    max-width: min(22rem, calc(100vw - 1.5rem));
+  }
+
+  .map-view--mobile .map-overlay.bottom-right {
+    max-width: calc(100% - 2rem);
+    bottom: calc(5.75rem + env(safe-area-inset-bottom));
+  }
+
+  .coverage-toggle {
+    display: flex;
+    margin-bottom: 0;
+  }
+
+  .map-coverage-panel--collapsed .coverage-chip-grid,
+  .map-coverage-panel--collapsed .overlay-muted {
+    display: none;
+  }
+
+  .map-coverage-panel--collapsed {
+    padding: 0.55rem 0.65rem;
+  }
+
+  .map-left-overlay-stack {
     max-width: 14rem;
+    width: min(14rem, calc(100% - 2rem));
   }
 
   .map-overlay.bottom-left,
@@ -424,12 +602,20 @@
     max-width: calc(100% - 2rem);
   }
 
-  .map-overlay.bottom-right {
-    bottom: 5.75rem;
-  }
-
   .coverage-chip-grid,
   .active-score-strip {
     grid-template-columns: 1fr;
+  }
+
+  .control-btn {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .map-view .leaflet-control-zoom a {
+    min-width: 44px;
+    min-height: 44px;
+    line-height: 44px;
   }
 }

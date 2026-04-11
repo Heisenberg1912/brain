@@ -1,11 +1,16 @@
 """FastAPI app — thin wrapper around brain/ engine."""
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from api.routers import data_bank, valuation, ai, blockchain
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_FRONTEND_DIST = _REPO_ROOT / "frontend" / "dist"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
@@ -40,3 +45,16 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "builtattic-brain"}
+
+
+if _FRONTEND_DIST.is_dir():
+    app.mount(
+        "/",
+        StaticFiles(directory=str(_FRONTEND_DIST), html=True),
+        name="frontend",
+    )
+else:
+
+    @app.get("/")
+    def root_no_build():
+        return RedirectResponse(url="/docs")

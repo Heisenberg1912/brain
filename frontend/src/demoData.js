@@ -1472,6 +1472,100 @@ export function getDemoValuationLogic(locationId) {
   return market ? clone({ location: market.name, location_id: market.id, logic: logicOut(market) }) : null
 }
 
+function valuationInputsFromMarket(market) {
+  const ph = market.price_history || []
+  const regionalCount = (market.regional_standards || []).length
+  return {
+    location: market.name,
+    location_id: market.id,
+    coverage: {
+      evidence_score: market.scores.data_confidence_score,
+      confidence_band: market.scores.data_confidence_band,
+      data_gaps: [],
+      masterplan_present: Boolean(market.masterplan?.version),
+      masterplan_history_count: 1,
+      price_history_points: ph.length,
+      price_history_span_days: Math.max(365, ph.length * 365),
+      census_present: Boolean(market.census?.population),
+      geo_profile_present: Boolean(market.geo),
+      nearby_infra_count: 4,
+      regional_standard_count: regionalCount,
+    },
+    market: {
+      avg_price_per_sqft: market.avg_price_per_sqft,
+      latest_price_per_sqft: market.avg_price_per_sqft,
+      annualized_growth_pct: market.scores.annualized_growth_pct,
+      recent_12m_growth_pct: market.scores.recent_12m_growth_pct,
+      price_history_points: ph.length,
+      price_history_span_days: Math.max(365, ph.length * 365),
+      price_trend_direction: market.copy.price_trend_direction,
+      price_momentum_band: market.copy.price_momentum_band,
+    },
+    planning: {
+      zoning_type: market.zoning_type,
+      fsi: market.masterplan.fsi,
+      max_height_m: market.masterplan.max_height_m,
+      ground_coverage_pct: market.masterplan.ground_coverage_pct,
+      masterplan_version: market.masterplan.version,
+      market_tier: market.copy.market_tier,
+      validation_status: market.planning?.validation_status,
+      planning_context_version: market.planning?.version_tag,
+      location_intelligence_score: market.planning?.location_intelligence_score,
+    },
+    demand: {
+      population: market.census.population,
+      growth_rate_pct: market.census.growth_rate_pct,
+      density_per_sqkm: market.census.density_per_sqkm,
+      demand_pressure_score: market.scores.demand_pressure_score,
+      demand_profile: market.copy.demand_profile,
+    },
+    infrastructure: {
+      nearby_infra_count: 4,
+      planned_infra_count: 2,
+      transit_node_count: 3,
+      nearest_infra_km: 1.2,
+      nearest_transit_node_km: 0.8,
+      road_proximity_km: 0.4,
+      metro_proximity_km: 1.1,
+      strategic_infra_score: market.scores.strategic_infra_score,
+      road_access_score: market.scores.road_access_score,
+      metro_access_score: market.scores.metro_access_score,
+      economic_access_score: market.scores.economic_access_score,
+      metro_station_count: 2,
+      economic_zone_count: 1,
+      highway_count: 1,
+      dominant_types: ['metro', 'highway'],
+    },
+    site: {
+      terrain_class: market.geo.terrain_class,
+      terrain_slope_pct: market.geo.terrain_slope_pct,
+      flood_risk_score: market.geo.flood_risk_score,
+      heat_risk_score: market.geo.heat_risk_score,
+      climate_risk_score: market.geo.climate_risk_score,
+      site_risk_score: market.scores.site_risk_score,
+      site_risk_band: market.copy.site_risk_band,
+      terrain_constraint_score: market.scores.terrain_constraint_score,
+      climate_exposure_score: market.scores.climate_exposure_score,
+    },
+    model_inputs: {
+      infra_score: market.scores.infra_score,
+      price_trend_score: market.scores.price_trend_score,
+      annualized_growth_pct: market.scores.annualized_growth_pct,
+      recent_12m_growth_pct: market.scores.recent_12m_growth_pct,
+      zoning_favorability: market.scores.zoning_favorability,
+      road_access_score: market.scores.road_access_score,
+      metro_access_score: market.scores.metro_access_score,
+      demand_pressure_score: market.scores.demand_pressure_score,
+      planned_infra_count: 2,
+    },
+  }
+}
+
+export function getDemoValuationInputs(locationId) {
+  const market = getMarket(locationId)
+  return market ? clone(valuationInputsFromMarket(market)) : null
+}
+
 export function getDemoPrediction(locationId) {
   const market = getMarket(locationId)
   return market ? clone(predictionOut(market)) : null

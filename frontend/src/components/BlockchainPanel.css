@@ -2,6 +2,16 @@
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.blockchain-panel :where(h1, h2, h3, h4, p, span, strong, small, a, .empty-msg) {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .chain-hero {
@@ -15,6 +25,13 @@
   background:
     radial-gradient(circle at top right, rgba(73, 165, 207, 0.18), transparent 34%),
     var(--surface-soft);
+  box-sizing: border-box;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.chain-hero > div:first-child {
+  min-width: 0;
 }
 
 .chain-hero h3,
@@ -34,7 +51,15 @@
   max-width: 32ch;
 }
 
-.chain-hero-stats,
+.chain-hero-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
 .bp-grid,
 .bp-list,
 .bp-icon-row {
@@ -42,9 +67,8 @@
   gap: 0.65rem;
 }
 
-.chain-hero-stats {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  min-width: 15rem;
+.bp-grid {
+  grid-template-columns: 1fr;
 }
 
 .hero-stat,
@@ -53,6 +77,16 @@
   border-radius: 18px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.04);
+  box-sizing: border-box;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.hero-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .hero-stat span,
@@ -69,8 +103,7 @@
 }
 
 .hero-stat strong {
-  display: block;
-  margin-top: 0.28rem;
+  margin: 0;
   font-size: 1.04rem;
 }
 
@@ -78,6 +111,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
+  box-sizing: border-box;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .bp-header {
@@ -90,12 +126,19 @@
   margin: 0;
 }
 
-.bp-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 .bp-list {
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+@media (max-width: 768px) {
+  .bp-list {
+    grid-template-columns: 1fr;
+  }
+
+  .chain-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .bp-card {
@@ -165,20 +208,4 @@
 .empty-msg {
   margin: 0;
   color: var(--text-muted);
-}
-
-@media (max-width: 960px) {
-  .chain-hero,
-  .bp-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .chain-hero {
-    flex-direction: column;
-  }
-
-  .chain-hero-stats {
-    min-width: 0;
-    width: 100%;
-  }
 }

@@ -22,6 +22,7 @@ import {
   getDemoSupportedNetworks,
   getDemoTokenizedProperties,
   getDemoValuationCore,
+  getDemoValuationInputs,
   getDemoValuationLogic,
 } from './demoData'
 
@@ -179,6 +180,13 @@ export function fetchValuationLogic(locationId) {
   return withDemoFallback(
     () => requestJson(`/api/v1/valuation/logic/${locationId}`),
     () => getDemoValuationLogic(locationId),
+  )
+}
+
+export function fetchValuationInputs(locationId) {
+  return withDemoFallback(
+    () => requestJson(`/api/v1/valuation/inputs/${locationId}`),
+    () => getDemoValuationInputs(locationId),
   )
 }
 
